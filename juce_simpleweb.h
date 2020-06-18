@@ -38,7 +38,7 @@
 #ifdef _MSC_VER
  #pragma warning (push)
  // Disable warnings for long class names, padding, and undefined preprocessor definitions.
- #pragma warning (disable: 4251 4786 4668 4820)
+ #pragma warning (disable: 4251 4786 4668 4820 4100 4267)
 #endif
 
 #include <juce_core/juce_core.h>

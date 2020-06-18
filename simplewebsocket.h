@@ -11,7 +11,7 @@
 #pragma once
 
 #define USE_STANDALONE_ASIO 1
-
+#define NOGDI
 #include "websocket/server_ws.hpp"
 #include "webserver/server_http.hpp"
 
@@ -31,7 +31,9 @@ public:
 	int port;
 
 	void start(int port = 8080);
-	void send(const String& message, const String& connectionId = "");
+	void send(const String& message);
+	void sendTo(const String& message, const String& id);
+	void sendExclude(const String& message, const StringArray excludeIds);
 	void stop();
 	void closeConnection(const String& id, int code = 0, const String &reason = "YouKnowWhy");
 

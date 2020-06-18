@@ -28,17 +28,8 @@ void SimpleWebSocket::start(int _port)
 	startThread();
 }
 
-void SimpleWebSocket::send(const String& message, const String& connectionId)
+void SimpleWebSocket::send(const String& message)
 {
-	if (connectionId.isNotEmpty())
-	{
-		if (connectionMap.contains(connectionId)) connectionMap[connectionId]->send(message.toStdString());
-		else
-		{
-			DBG("Not found !");
-		}
-		return;
-	}
 	for (auto& c : connectionMap)
 	{
 		c->send(message.toStdString());
@@ -46,9 +37,30 @@ void SimpleWebSocket::send(const String& message, const String& connectionId)
 
 }
 
+void SimpleWebSocket::sendTo(const String& message, const String& id)
+{
+	if (connectionMap.contains(id)) connectionMap[id]->send(message.toStdString());
+	else
+	{
+		DBG("[Dashboard] Websocket connection not found : " << id);
+	}
+}
+
+void SimpleWebSocket::sendExclude(const String& message, const StringArray excludeIds)
+{
+	HashMap<String, std::shared_ptr<WsServer::Connection>>::Iterator it(connectionMap);
+	while(it.next())
+	{
+		if(excludeIds.contains(it.getKey())) continue;
+		it.getValue()->send(message.toStdString());
+	}
+}
+
 void SimpleWebSocket::stop()
 {
+	ioService->stop();
 	http.stop();
+	ws.stop();
 	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(100);
 }
 

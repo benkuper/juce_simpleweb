@@ -1,5 +1,7 @@
 #pragma once
 
+#pragma warning(disable:4456 4457 4458 4244 4239)
+
 #include "../common/asio_compatibility.hpp"
 #include "../common/crypto.hpp"
 #include "../common/mutex.hpp"

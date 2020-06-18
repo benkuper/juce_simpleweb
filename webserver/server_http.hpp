@@ -1,6 +1,8 @@
 #ifndef SIMPLE_WEB_SERVER_HTTP_HPP
 #define SIMPLE_WEB_SERVER_HTTP_HPP
 
+#pragma warning(disable:4456 4457 4458 4244 4239)
+
 #include "../common/asio_compatibility.hpp"
 #include "../common/mutex.hpp"
 #include "../common/utility.hpp"
