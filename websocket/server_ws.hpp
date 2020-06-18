@@ -1,11 +1,9 @@
 #pragma once
 
-#define USE_STANDALONE_ASIO 1
-
-#include "asio_compatibility.hpp"
-#include "crypto.hpp"
-#include "mutex.hpp"
-#include "utility.hpp"
+#include "../common/asio_compatibility.hpp"
+#include "../common/crypto.hpp"
+#include "../common/mutex.hpp"
+#include "../common/utility.hpp"
 #include <array>
 #include <atomic>
 #include <iostream>

@@ -356,7 +356,7 @@ namespace SimpleWeb {
 
 
 		/// Returns sha1 hash value from input string.
-		static std::string sha1(const std::string& input, std::size_t iterations = 1) noexcept {
+		static std::string sha1(const std::string& input, std::size_t /*iterations */ = 1) noexcept {
 #if USE_OPENSSL
 			std::string hash;
 
@@ -368,10 +368,10 @@ namespace SimpleWeb {
 
 			return hash;
 #else
-			char sha[20], b64_sha[sizeof(sha) * 2];
+			char sha[20];
 			SHA1_CTX sha_ctx;
 			SHA1Init(&sha_ctx);
-			SHA1Update(&sha_ctx, (const unsigned char*)input.c_str(), input.size());
+			SHA1Update(&sha_ctx, (const unsigned char*)input.c_str(), (uint32_t)input.size());
 			SHA1Final((unsigned char*)sha, &sha_ctx);
 
 			return std::string(sha, sizeof(sha));

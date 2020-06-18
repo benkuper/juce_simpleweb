@@ -21,5 +21,5 @@
 //==============================================================================
 
 
-#include "WebSocket.cpp"
-#include "simplewebsocket.cpp"
+#include "SimpleWebSocket.cpp"
+//#include "SimpleWebServer.cpp"

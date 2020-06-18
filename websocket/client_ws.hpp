@@ -1,10 +1,10 @@
 #ifndef SIMPLE_WEB_CLIENT_WS_HPP
 #define SIMPLE_WEB_CLIENT_WS_HPP
 
-#include "asio_compatibility.hpp"
-#include "crypto.hpp"
-#include "mutex.hpp"
-#include "utility.hpp"
+#include "../common/asio_compatibility.hpp"
+#include "../common/crypto.hpp"
+#include "../common/mutex.hpp"
+#include "../common/utility.hpp"
 #include <array>
 #include <atomic>
 #include <iostream>

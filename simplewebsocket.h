@@ -1,8 +1,8 @@
 /*
   ==============================================================================
 
-    simplewebsocket.h
-    Created: 17 Jun 2020 8:43:10pm
+    juce_SimpleWebSocket.h
+    Created: 17 Jun 2020 11:22:54pm
     Author:  bkupe
 
   ==============================================================================
@@ -10,41 +10,78 @@
 
 #pragma once
 
-#include <memory>
-#include <functional>
-#include <string>
+#define USE_STANDALONE_ASIO 1
 
 #include "websocket/server_ws.hpp"
-using WsServer = SimpleWeb::SocketServer<SimpleWeb::WS>;
+#include "webserver/server_http.hpp"
 
-class SimpleWebSocket
+using WsServer = SimpleWeb::SocketServer<SimpleWeb::WS>;
+using HttpServer= SimpleWeb::Server<SimpleWeb::HTTP>;
+
+class SimpleWebSocket :
+    public Thread
 {
 public:
-    SimpleWebSocket();
-    ~SimpleWebSocket();
+
+	SimpleWebSocket();
+	~SimpleWebSocket();
 
 
-    std::function<void(const std::string& connectionId, const std::string msg)> onMessageFunc;
-    std::function<void(const std::string& connectionId)> onNewConnectionFunc;
-    std::function<void(const std::string& connectionId, int status, const std::string& reason)> onConnectionCloseFunc;
-    std::function<void(const std::string& connectionId, const std::string& message)> onErrorFunc;
+	File rootPath;
+	int port;
 
-    void start(int port = 8080);
-    void stop();
+	void start(int port = 8080);
+	void send(const String& message, const String& connectionId = "");
+	void stop();
+	void closeConnection(const String& id, int code = 0, const String &reason = "YouKnowWhy");
 
-    void closeConnection(const std::string& id);
+	void run() override;
 
-    void send(const std::string& message, const std::string& connectionId = "");
+	class  Listener
+	{
+	public:
+		/** Destructor. */
+		virtual ~Listener() {}
+		virtual void connectionOpened(const String &id) {}
+		virtual void messageReceived(const String& id, const String &message) {}
+		virtual void connectionClosed(const String& id, int status, const String &reason) {}
+		virtual void connectionError(const String& id, const String & message) {}
+	};
+
+
+
+	ListenerList<Listener> webSocketListeners;
+	void addWebSocketListener(Listener* newListener) { webSocketListeners.add(newListener); }
+	void removeWebSocketListener(Listener* listener) { webSocketListeners.remove(listener); }
+
+	class RequestHandler
+	{
+	public:
+		virtual ~RequestHandler();
+		virtual String handleHTTPRequest(const String& request) = 0;
+	};
+
+	RequestHandler* handler;
 
 protected:
-    WsServer server;
-    std::map<std::string, std::shared_ptr<WsServer::Connection>> connectionMap;
+	WsServer ws;
+	HttpServer http;
+	
+	std::shared_ptr<asio::io_service> ioService;
 
-    void onMessage(std::shared_ptr<WsServer::Connection> connection, std::shared_ptr<WsServer::InMessage> in_message);
-    void onNewConnection(std::shared_ptr<WsServer::Connection> connection);
-    void onConnectionClose(std::shared_ptr<WsServer::Connection> connection, int status, const std::string& /*reason*/);
-    void onError(std::shared_ptr<WsServer::Connection> connection, const SimpleWeb::error_code& ec);
 
-    std::string getConnectionString(std::shared_ptr<WsServer::Connection> connection) const;
-    
+	HashMap<String, std::shared_ptr<WsServer::Connection>> connectionMap;
+
+	void onMessageCallback(std::shared_ptr<WsServer::Connection> connection, std::shared_ptr<WsServer::InMessage> in_message);
+	void onNewConnectionCallback(std::shared_ptr<WsServer::Connection> connection);
+	void onConnectionCloseCallback(std::shared_ptr<WsServer::Connection> connection, int status, const std::string& /*reason*/);
+	void onErrorCallback(std::shared_ptr<WsServer::Connection> connection, const SimpleWeb::error_code& ec);
+
+	void onHTTPUpgrade(std::unique_ptr<SimpleWeb::HTTP>& socket, std::shared_ptr<HttpServer::Request> request);
+
+
+
+	void httpDefaultCallback(std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request);
+
+	String getConnectionString(std::shared_ptr<WsServer::Connection> connection) const;
 };

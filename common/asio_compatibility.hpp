@@ -1,10 +1,12 @@
-#pragma once 
+#ifndef SIMPLE_WEB_ASIO_COMPATIBILITY_HPP
+#define SIMPLE_WEB_ASIO_COMPATIBILITY_HPP
 
 #include <memory>
 
 #ifdef USE_STANDALONE_ASIO
 #include "../asio/asio/include/asio.hpp"
-//#include <asio/steady_timer.hpp>
+#include "../asio/asio/include/asio/steady_timer.hpp"
+
 namespace SimpleWeb {
   namespace error = asio::error;
   using error_code = std::error_code;
@@ -80,3 +82,5 @@ namespace SimpleWeb {
   }
 #endif
 } // namespace SimpleWeb
+
+#endif /* SIMPLE_WEB_ASIO_COMPATIBILITY_HPP */
