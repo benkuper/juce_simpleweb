@@ -4,8 +4,18 @@
 #include <memory>
 
 #ifdef USE_STANDALONE_ASIO
+
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0A00
+#define UNDEF_AFTER
+#endif
+
 #include "../asio/asio/include/asio.hpp"
 #include "../asio/asio/include/asio/steady_timer.hpp"
+
+#ifdef UNDEF_AFTER
+#undef _WIN32_WINNT
+#endif
 
 namespace SimpleWeb {
   namespace error = asio::error;

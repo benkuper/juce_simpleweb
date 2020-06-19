@@ -1,4 +1,4 @@
-#include "SimpleWebSocket.h"
+
 /*
   ==============================================================================
 
@@ -8,6 +8,8 @@
 
   ==============================================================================
 */
+
+#include "MIMETypes.h"
 
 SimpleWebSocket::SimpleWebSocket() :
 	Thread("Web socket"),
@@ -37,9 +39,30 @@ void SimpleWebSocket::send(const String& message)
 
 }
 
+void SimpleWebSocket::send(const MemoryBlock& data)
+{
+	std::shared_ptr<WsServer::OutMessage> out_message = std::make_shared<WsServer::OutMessage>();
+	out_message->write((const char*)data.getData(), data.getSize()); 
+	for (auto& c : connectionMap)
+	{
+		c->send(out_message, nullptr, 130); //130 = binary
+	}
+}
+
 void SimpleWebSocket::sendTo(const String& message, const String& id)
 {
 	if (connectionMap.contains(id)) connectionMap[id]->send(message.toStdString());
+	else
+	{
+		DBG("[Dashboard] Websocket connection not found : " << id);
+	}
+}
+
+void SimpleWebSocket::sendTo(const MemoryBlock& data, const String& id)
+{
+	std::shared_ptr<WsServer::OutMessage> out_message = std::make_shared<WsServer::OutMessage>();
+	out_message->write((const char*)data.getData(), data.getSize());
+	if (connectionMap.contains(id)) connectionMap[id]->send(out_message, nullptr, 130); //130 = binary
 	else
 	{
 		DBG("[Dashboard] Websocket connection not found : " << id);
@@ -53,6 +76,19 @@ void SimpleWebSocket::sendExclude(const String& message, const StringArray exclu
 	{
 		if(excludeIds.contains(it.getKey())) continue;
 		it.getValue()->send(message.toStdString());
+	}
+}
+
+void SimpleWebSocket::sendExclude(const MemoryBlock& data, const StringArray excludeIds)
+{
+	std::shared_ptr<WsServer::OutMessage> out_message = std::make_shared<WsServer::OutMessage>();
+	out_message->write((const char* )data.getData(), data.getSize());
+	
+	HashMap<String, std::shared_ptr<WsServer::Connection>>::Iterator it(connectionMap);
+	while (it.next())
+	{
+		if (excludeIds.contains(it.getKey())) continue;
+		it.getValue()->send(out_message, nullptr, 130); //130 = binary
 	}
 }
 
@@ -137,18 +173,53 @@ void SimpleWebSocket::onHTTPUpgrade(std::unique_ptr<SimpleWeb::HTTP>& socket, st
 
 void SimpleWebSocket::httpDefaultCallback(std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request)
 {
-	DBG("Http callback here");
-	String html = "Sorry not sorry";
-	if (handler != nullptr) html = handler->handleHTTPRequest(request->content.string());
-	else if (rootPath.exists() && rootPath.isDirectory())
+	if (handler != nullptr)
 	{
+		*response << handler->handleHTTPRequest(request->content.string());
+		return;
+	}
+	
+	if (rootPath.exists() && rootPath.isDirectory())
+	{
+		String content = "";
+		String contentType = "text/html";
+		int contentSize = 0;
+		File f; 
+		
 		String path = request->path.substr(1);
 		if (path.isEmpty()) path = "index.html";
-		File f = rootPath.getChildFile(path); //substr to remove the first "/"
-		if (f.existsAsFile()) html = f.loadFileAsString();
+		f = rootPath.getChildFile(path); //substr to remove the first "/"
+
+		if (f.exists() && f.isDirectory()) f = f.getChildFile("index.html");
+
+		if (f.existsAsFile())
+		{
+			contentSize = f.getSize();
+			contentType = MIMETypes::getMIMEType(f.getFileExtension());
+			content = f.loadFileAsString();
+
+			String result = "HTTP/1.1 200 OK";
+
+			if (contentSize == content.length()) result += "\r\nContent-Length: " + String(contentSize);
+			else
+			{
+				DBG("Content size and length mismatch (" << f.getFullPathName() << ") :" << contentSize << " <> " << content.length());
+			}
+			result += "\r\nContent-Type: " + contentType;
+			result += "\r\n\r\n";
+
+			result += content;
+
+			*response << result;
+			return;
+		}
+		else
+		{
+			DBG("WebServer requested file not found : " << f.getFullPathName());
+		}
 	}
 
-	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << html.length() << "\r\n\r\n" << html;
+	*response << "HTTP/1.1 404 Not Found";
 }
 
 String SimpleWebSocket::getConnectionString(std::shared_ptr<WsServer::Connection> connection) const

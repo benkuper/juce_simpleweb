@@ -31,9 +31,14 @@ public:
 	int port;
 
 	void start(int port = 8080);
+
 	void send(const String& message);
+	void send(const MemoryBlock& data);
 	void sendTo(const String& message, const String& id);
+	void sendTo(const MemoryBlock& data, const String& id);
 	void sendExclude(const String& message, const StringArray excludeIds);
+	void sendExclude(const MemoryBlock& data, const StringArray excludeIds);
+
 	void stop();
 	void closeConnection(const String& id, int code = 0, const String &reason = "YouKnowWhy");
 
@@ -59,7 +64,7 @@ public:
 	class RequestHandler
 	{
 	public:
-		virtual ~RequestHandler();
+		virtual ~RequestHandler() {}
 		virtual String handleHTTPRequest(const String& request) = 0;
 	};
 
@@ -70,9 +75,12 @@ protected:
 	HttpServer http;
 	
 	std::shared_ptr<asio::io_service> ioService;
-
-
 	HashMap<String, std::shared_ptr<WsServer::Connection>> connectionMap;
+
+	const StringArray imageExtensions{"css","csv","html","javascrit","xml"};
+	const StringArray appExtensions{ "ogg","pdf","json","xml", "zip" };
+	const StringArray videoExtensions{"mpeg","mp4","webm" };
+
 
 	void onMessageCallback(std::shared_ptr<WsServer::Connection> connection, std::shared_ptr<WsServer::InMessage> in_message);
 	void onNewConnectionCallback(std::shared_ptr<WsServer::Connection> connection);
@@ -80,8 +88,6 @@ protected:
 	void onErrorCallback(std::shared_ptr<WsServer::Connection> connection, const SimpleWeb::error_code& ec);
 
 	void onHTTPUpgrade(std::unique_ptr<SimpleWeb::HTTP>& socket, std::shared_ptr<HttpServer::Request> request);
-
-
 
 	void httpDefaultCallback(std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request);
 
