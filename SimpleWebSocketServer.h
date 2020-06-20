@@ -34,6 +34,7 @@ public:
 
 	void send(const String& message);
 	void send(const MemoryBlock& data);
+	void send(const char * data, int numData);
 	void sendTo(const String& message, const String& id);
 	void sendTo(const MemoryBlock& data, const String& id);
 	void sendExclude(const String& message, const StringArray excludeIds);

@@ -43,11 +43,16 @@ void SimpleWebSocketServer::send(const String& message)
 
 void SimpleWebSocketServer::send(const MemoryBlock& data)
 {
+	send((const char*)data.getData(), data.getSize());
+}
+
+void SimpleWebSocketServer::send(const char* data, int numData)
+{
 	std::shared_ptr<WsServer::OutMessage> out_message = std::make_shared<WsServer::OutMessage>();
-	out_message->write((const char*)data.getData(), data.getSize()); 
-    HashMap<String, std::shared_ptr<WsServer::Connection>>::Iterator it(connectionMap);
-    while (it.next())
-    {
+	out_message->write(data, numData);
+	HashMap<String, std::shared_ptr<WsServer::Connection>>::Iterator it(connectionMap);
+	while (it.next())
+	{
 		it.getValue()->send(out_message, nullptr, 130); //130 = binary
 	}
 }
