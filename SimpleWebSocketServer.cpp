@@ -17,7 +17,6 @@ SimpleWebSocketServer::SimpleWebSocketServer() :
 	port(0),
 	handler(nullptr)
 {
-
 }
 
 SimpleWebSocketServer::~SimpleWebSocketServer()
@@ -34,11 +33,7 @@ void SimpleWebSocketServer::start(int _port)
 void SimpleWebSocketServer::send(const String& message)
 {
     HashMap<String, std::shared_ptr<WsServer::Connection>>::Iterator it(connectionMap);
-    while (it.next())
-    {
-		it.getValue()->send(message.toStdString());
-	}
-
+    while (it.next()) it.getValue()->send(message.toStdString());
 }
 
 void SimpleWebSocketServer::send(const MemoryBlock& data)
@@ -102,13 +97,24 @@ void SimpleWebSocketServer::sendExclude(const MemoryBlock& data, const StringArr
 
 void SimpleWebSocketServer::stop()
 {
+	
 	std::unordered_set<std::shared_ptr<WsServer::Connection>> connections = ws.get_connections();
 	for (auto& c : connections) c->send_close(1000, "Server destroyed");
+	connectionMap.clear();
 	
-	if(ioService != nullptr) ioService->stop();
-	http.stop();
+#if !JUCE_DEBUG
+	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(100);
+#endif
+
 	ws.stop();
-	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(500);
+	if (ioService != nullptr) ioService->stop();
+	http.stop();
+	ioService.reset();
+
+#if JUCE_DEBUG //don't know why the order is not the same for debug and release...
+	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(100);
+#endif
+
 }
 
 void SimpleWebSocketServer::closeConnection(const String& id, int status, const String& reason)
