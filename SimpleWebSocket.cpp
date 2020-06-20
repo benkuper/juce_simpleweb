@@ -32,9 +32,10 @@ void SimpleWebSocket::start(int _port)
 
 void SimpleWebSocket::send(const String& message)
 {
-	for (auto& c : connectionMap)
-	{
-		c->send(message.toStdString());
+    HashMap<String, std::shared_ptr<WsServer::Connection>>::Iterator it(connectionMap);
+    while (it.next())
+    {
+		it.getValue()->send(message.toStdString());
 	}
 
 }
@@ -43,9 +44,10 @@ void SimpleWebSocket::send(const MemoryBlock& data)
 {
 	std::shared_ptr<WsServer::OutMessage> out_message = std::make_shared<WsServer::OutMessage>();
 	out_message->write((const char*)data.getData(), data.getSize()); 
-	for (auto& c : connectionMap)
-	{
-		c->send(out_message, nullptr, 130); //130 = binary
+    HashMap<String, std::shared_ptr<WsServer::Connection>>::Iterator it(connectionMap);
+    while (it.next())
+    {
+		it.getValue()->send(out_message, nullptr, 130); //130 = binary
 	}
 }
 
