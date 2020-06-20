@@ -2,7 +2,7 @@
 /*
   ==============================================================================
 
-	juce_SimpleWebSocket.cpp
+	juce_SimpleWebSocketServer.cpp
 	Created: 17 Jun 2020 11:22:54pm
 	Author:  bkupe
 
@@ -10,8 +10,9 @@
 */
 
 #include "MIMETypes.h"
+#include "SimpleWebSocketServer.h"
 
-SimpleWebSocket::SimpleWebSocket() :
+SimpleWebSocketServer::SimpleWebSocketServer() :
 	Thread("Web socket"),
 	port(0),
 	handler(nullptr)
@@ -19,18 +20,18 @@ SimpleWebSocket::SimpleWebSocket() :
 
 }
 
-SimpleWebSocket::~SimpleWebSocket()
+SimpleWebSocketServer::~SimpleWebSocketServer()
 {
 	stop();
 }
 
-void SimpleWebSocket::start(int _port)
+void SimpleWebSocketServer::start(int _port)
 {
 	port = _port;
 	startThread();
 }
 
-void SimpleWebSocket::send(const String& message)
+void SimpleWebSocketServer::send(const String& message)
 {
     HashMap<String, std::shared_ptr<WsServer::Connection>>::Iterator it(connectionMap);
     while (it.next())
@@ -40,7 +41,7 @@ void SimpleWebSocket::send(const String& message)
 
 }
 
-void SimpleWebSocket::send(const MemoryBlock& data)
+void SimpleWebSocketServer::send(const MemoryBlock& data)
 {
 	std::shared_ptr<WsServer::OutMessage> out_message = std::make_shared<WsServer::OutMessage>();
 	out_message->write((const char*)data.getData(), data.getSize()); 
@@ -51,7 +52,7 @@ void SimpleWebSocket::send(const MemoryBlock& data)
 	}
 }
 
-void SimpleWebSocket::sendTo(const String& message, const String& id)
+void SimpleWebSocketServer::sendTo(const String& message, const String& id)
 {
 	if (connectionMap.contains(id)) connectionMap[id]->send(message.toStdString());
 	else
@@ -60,7 +61,7 @@ void SimpleWebSocket::sendTo(const String& message, const String& id)
 	}
 }
 
-void SimpleWebSocket::sendTo(const MemoryBlock& data, const String& id)
+void SimpleWebSocketServer::sendTo(const MemoryBlock& data, const String& id)
 {
 	std::shared_ptr<WsServer::OutMessage> out_message = std::make_shared<WsServer::OutMessage>();
 	out_message->write((const char*)data.getData(), data.getSize());
@@ -71,7 +72,7 @@ void SimpleWebSocket::sendTo(const MemoryBlock& data, const String& id)
 	}
 }
 
-void SimpleWebSocket::sendExclude(const String& message, const StringArray excludeIds)
+void SimpleWebSocketServer::sendExclude(const String& message, const StringArray excludeIds)
 {
 	HashMap<String, std::shared_ptr<WsServer::Connection>>::Iterator it(connectionMap);
 	while(it.next())
@@ -81,7 +82,7 @@ void SimpleWebSocket::sendExclude(const String& message, const StringArray exclu
 	}
 }
 
-void SimpleWebSocket::sendExclude(const MemoryBlock& data, const StringArray excludeIds)
+void SimpleWebSocketServer::sendExclude(const MemoryBlock& data, const StringArray excludeIds)
 {
 	std::shared_ptr<WsServer::OutMessage> out_message = std::make_shared<WsServer::OutMessage>();
 	out_message->write((const char* )data.getData(), data.getSize());
@@ -94,37 +95,45 @@ void SimpleWebSocket::sendExclude(const MemoryBlock& data, const StringArray exc
 	}
 }
 
-void SimpleWebSocket::stop()
+void SimpleWebSocketServer::stop()
 {
-	ioService->stop();
+	std::unordered_set<std::shared_ptr<WsServer::Connection>> connections = ws.get_connections();
+	for (auto& c : connections) c->send_close(0, "Server destroyed");
+	
+	if(ioService != nullptr) ioService->stop();
 	http.stop();
 	ws.stop();
-	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(100);
+	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(500);
 }
 
-void SimpleWebSocket::closeConnection(const String& id, int status, const String& reason)
+void SimpleWebSocketServer::closeConnection(const String& id, int status, const String& reason)
 {
 	if (!connectionMap.contains(id)) return;
 	connectionMap[id]->send_close(status, reason.toStdString());
 }
 
-void SimpleWebSocket::run()
+int SimpleWebSocketServer::getNumActiveConnections() const
+{
+	return connectionMap.size();
+}
+
+void SimpleWebSocketServer::run()
 {
 	//HTTP init
 	ioService = std::make_shared<asio::io_service>();
 	http.config.port = port;
 	http.io_service = ioService;
 
-	http.default_resource["GET"] = std::bind(&SimpleWebSocket::httpDefaultCallback, this, std::placeholders::_1, std::placeholders::_2);
-	http.on_upgrade = std::bind(&SimpleWebSocket::onHTTPUpgrade, this, std::placeholders::_1, std::placeholders::_2);
+	http.default_resource["GET"] = std::bind(&SimpleWebSocketServer::httpDefaultCallback, this, std::placeholders::_1, std::placeholders::_2);
+	http.on_upgrade = std::bind(&SimpleWebSocketServer::onHTTPUpgrade, this, std::placeholders::_1, std::placeholders::_2);
 
 	//WebSocket init
 	auto& wsEndpoint = ws.endpoint["^/ws/?$"];
 	
-	wsEndpoint.on_message = std::bind(&SimpleWebSocket::onMessageCallback, this, std::placeholders::_1, std::placeholders::_2);
-	wsEndpoint.on_error = std::bind(&SimpleWebSocket::onErrorCallback, this, std::placeholders::_1, std::placeholders::_2);
-	wsEndpoint.on_open = std::bind(&SimpleWebSocket::onNewConnectionCallback, this, std::placeholders::_1);
-	wsEndpoint.on_close = std::bind(&SimpleWebSocket::onConnectionCloseCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+	wsEndpoint.on_message = std::bind(&SimpleWebSocketServer::onMessageCallback, this, std::placeholders::_1, std::placeholders::_2);
+	wsEndpoint.on_error = std::bind(&SimpleWebSocketServer::onErrorCallback, this, std::placeholders::_1, std::placeholders::_2);
+	wsEndpoint.on_open = std::bind(&SimpleWebSocketServer::onNewConnectionCallback, this, std::placeholders::_1);
+	wsEndpoint.on_close = std::bind(&SimpleWebSocketServer::onConnectionCloseCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 
 	DBG("Start HTTP");
 	http.start();
@@ -136,33 +145,33 @@ void SimpleWebSocket::run()
 }
 
 
-void SimpleWebSocket::onMessageCallback(std::shared_ptr<WsServer::Connection> connection, std::shared_ptr<WsServer::InMessage> in_message)
+void SimpleWebSocketServer::onMessageCallback(std::shared_ptr<WsServer::Connection> connection, std::shared_ptr<WsServer::InMessage> in_message)
 {
 	String id = getConnectionString(connection);
 	webSocketListeners.call(&Listener::messageReceived, id, String(in_message->string()));
 }
 
-void SimpleWebSocket::onNewConnectionCallback(std::shared_ptr<WsServer::Connection> connection)
+void SimpleWebSocketServer::onNewConnectionCallback(std::shared_ptr<WsServer::Connection> connection)
 {
 	String id = getConnectionString(connection);
 	connectionMap.set(id, connection);
 	webSocketListeners.call(&Listener::connectionOpened, id);
 }
 
-void SimpleWebSocket::onConnectionCloseCallback(std::shared_ptr<WsServer::Connection> connection, int status, const std::string& reason)
+void SimpleWebSocketServer::onConnectionCloseCallback(std::shared_ptr<WsServer::Connection> connection, int status, const std::string& reason)
 {
 	String id = getConnectionString(connection);
 	connectionMap.remove(id);
 	webSocketListeners.call(&Listener::connectionClosed, id, status, reason);
 }
 
-void SimpleWebSocket::onErrorCallback(std::shared_ptr<WsServer::Connection> connection, const SimpleWeb::error_code& ec)
+void SimpleWebSocketServer::onErrorCallback(std::shared_ptr<WsServer::Connection> connection, const SimpleWeb::error_code& ec)
 {
 	String id = getConnectionString(connection);
 	webSocketListeners.call(&Listener::connectionError, id, ec.message());
 }
 
-void SimpleWebSocket::onHTTPUpgrade(std::unique_ptr<SimpleWeb::HTTP>& socket, std::shared_ptr<HttpServer::Request> request)
+void SimpleWebSocketServer::onHTTPUpgrade(std::unique_ptr<SimpleWeb::HTTP>& socket, std::shared_ptr<HttpServer::Request> request)
 {
 	DBG("Http updgrade here");
 	auto connection = std::make_shared<WsServer::Connection>(std::move(socket));
@@ -173,7 +182,7 @@ void SimpleWebSocket::onHTTPUpgrade(std::unique_ptr<SimpleWeb::HTTP>& socket, st
 	ws.upgrade(connection);
 }
 
-void SimpleWebSocket::httpDefaultCallback(std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request)
+void SimpleWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request)
 {
 	if (handler != nullptr)
 	{
@@ -224,7 +233,7 @@ void SimpleWebSocket::httpDefaultCallback(std::shared_ptr<HttpServer::Response> 
 	*response << "HTTP/1.1 404 Not Found";
 }
 
-String SimpleWebSocket::getConnectionString(std::shared_ptr<WsServer::Connection> connection) const
+String SimpleWebSocketServer::getConnectionString(std::shared_ptr<WsServer::Connection> connection) const
 {
 	return String(connection->remote_endpoint().address().to_string()) + ":" + String(connection->remote_endpoint().port());
 }

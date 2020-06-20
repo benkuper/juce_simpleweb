@@ -19,14 +19,13 @@
 using WsServer = SimpleWeb::SocketServer<SimpleWeb::WS>;
 using HttpServer= SimpleWeb::Server<SimpleWeb::HTTP>;
 
-class SimpleWebSocket :
+class SimpleWebSocketServer :
     public Thread
 {
 public:
 
-	SimpleWebSocket();
-	~SimpleWebSocket();
-
+	SimpleWebSocketServer();
+	~SimpleWebSocketServer();
 
 	File rootPath;
 	int port;
@@ -42,6 +41,8 @@ public:
 
 	void stop();
 	void closeConnection(const String& id, int code = 0, const String &reason = "YouKnowWhy");
+
+	int getNumActiveConnections() const;
 
 	void run() override;
 
@@ -77,12 +78,7 @@ protected:
 	
 	std::shared_ptr<asio::io_service> ioService;
 	HashMap<String, std::shared_ptr<WsServer::Connection>> connectionMap;
-
-	const StringArray imageExtensions{"css","csv","html","javascrit","xml"};
-	const StringArray appExtensions{ "ogg","pdf","json","xml", "zip" };
-	const StringArray videoExtensions{"mpeg","mp4","webm" };
-
-
+	
 	void onMessageCallback(std::shared_ptr<WsServer::Connection> connection, std::shared_ptr<WsServer::InMessage> in_message);
 	void onNewConnectionCallback(std::shared_ptr<WsServer::Connection> connection);
 	void onConnectionCloseCallback(std::shared_ptr<WsServer::Connection> connection, int status, const std::string& /*reason*/);
@@ -94,3 +90,4 @@ protected:
 
 	String getConnectionString(std::shared_ptr<WsServer::Connection> connection) const;
 };
+

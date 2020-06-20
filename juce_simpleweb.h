@@ -48,5 +48,5 @@
 
 using namespace juce;
 
-#include "SimpleWebSocket.h"
-//#include "SimpleWebServer.h"
+#include "SimpleWebSocketServer.h"
+#include "SimpleWebSocketClient.h"
