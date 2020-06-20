@@ -350,6 +350,12 @@ namespace SimpleWeb {
 			memset(context, '\0', sizeof(*context));
 			memset(&finalcount, '\0', sizeof(finalcount));
 		}
+#undef blk
+#undef R0
+#undef R1
+#undef R2
+#undef R3
+#undef R4
 #endif
 
 
@@ -498,4 +504,6 @@ namespace SimpleWeb {
 
 	};
 } // namespace SimpleWeb
+
+
 #endif /* SIMPLE_WEB_CRYPTO_HPP */
