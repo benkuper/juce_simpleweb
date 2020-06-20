@@ -196,7 +196,7 @@ void SimpleWebSocket::httpDefaultCallback(std::shared_ptr<HttpServer::Response> 
 
 		if (f.existsAsFile())
 		{
-			contentSize = f.getSize();
+			contentSize = (int)f.getSize();
 			contentType = MIMETypes::getMIMEType(f.getFileExtension());
 			content = f.loadFileAsString();
 
