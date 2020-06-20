@@ -53,7 +53,7 @@ void SimpleWebSocketClient::stop()
 {
 	if (connection != nullptr) connection->send_close(1000, "Time to split my friend");
 	if(ws != nullptr) ws->stop();
-	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(100);
+	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(1000);
 }
 
 
