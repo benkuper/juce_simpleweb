@@ -176,7 +176,6 @@ void SimpleWebSocketServer::onErrorCallback(std::shared_ptr<WsServer::Connection
 
 void SimpleWebSocketServer::httpStartCallback(unsigned short _port)
 {
-	DBG("HTTP CALLBACK : " << (int)port);
 	isConnected = port == _port;
 }
 
