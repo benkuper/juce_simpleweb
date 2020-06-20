@@ -29,6 +29,7 @@ public:
 
 	File rootPath;
 	int port;
+	bool isConnected;
 
 	void start(int port = 8080);
 
@@ -41,7 +42,7 @@ public:
 	void sendExclude(const MemoryBlock& data, const StringArray excludeIds);
 
 	void stop();
-	void closeConnection(const String& id, int code = 0, const String &reason = "YouKnowWhy");
+	void closeConnection(const String& id, int code = 1000, const String &reason = "YouKnowWhy");
 
 	int getNumActiveConnections() const;
 
@@ -85,6 +86,7 @@ protected:
 	void onConnectionCloseCallback(std::shared_ptr<WsServer::Connection> connection, int status, const std::string& /*reason*/);
 	void onErrorCallback(std::shared_ptr<WsServer::Connection> connection, const SimpleWeb::error_code& ec);
 
+	void httpStartCallback(unsigned short port);
 	void onHTTPUpgrade(std::unique_ptr<SimpleWeb::HTTP>& socket, std::shared_ptr<HttpServer::Request> request);
 
 	void httpDefaultCallback(std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request);

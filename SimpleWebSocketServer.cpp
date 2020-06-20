@@ -103,7 +103,7 @@ void SimpleWebSocketServer::sendExclude(const MemoryBlock& data, const StringArr
 void SimpleWebSocketServer::stop()
 {
 	std::unordered_set<std::shared_ptr<WsServer::Connection>> connections = ws.get_connections();
-	for (auto& c : connections) c->send_close(0, "Server destroyed");
+	for (auto& c : connections) c->send_close(1000, "Server destroyed");
 	
 	if(ioService != nullptr) ioService->stop();
 	http.stop();
@@ -125,6 +125,8 @@ int SimpleWebSocketServer::getNumActiveConnections() const
 void SimpleWebSocketServer::run()
 {
 	//HTTP init
+	isConnected = false;
+
 	ioService = std::make_shared<asio::io_service>();
 	http.config.port = port;
 	http.io_service = ioService;
@@ -140,13 +142,8 @@ void SimpleWebSocketServer::run()
 	wsEndpoint.on_open = std::bind(&SimpleWebSocketServer::onNewConnectionCallback, this, std::placeholders::_1);
 	wsEndpoint.on_close = std::bind(&SimpleWebSocketServer::onConnectionCloseCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 
-	DBG("Start HTTP");
-	http.start();
-
-	DBG("Start io service");
+	http.start(std::bind(&SimpleWebSocketServer::httpStartCallback, this, std::placeholders::_1));
 	ioService->run();
-
-	DBG("HTTP Service started on " << port);
 }
 
 
@@ -173,12 +170,18 @@ void SimpleWebSocketServer::onConnectionCloseCallback(std::shared_ptr<WsServer::
 void SimpleWebSocketServer::onErrorCallback(std::shared_ptr<WsServer::Connection> connection, const SimpleWeb::error_code& ec)
 {
 	String id = getConnectionString(connection);
+	connectionMap.remove(id); 
 	webSocketListeners.call(&Listener::connectionError, id, ec.message());
+}
+
+void SimpleWebSocketServer::httpStartCallback(unsigned short _port)
+{
+	DBG("HTTP CALLBACK : " << (int)port);
+	isConnected = port == _port;
 }
 
 void SimpleWebSocketServer::onHTTPUpgrade(std::unique_ptr<SimpleWeb::HTTP>& socket, std::shared_ptr<HttpServer::Request> request)
 {
-	DBG("Http updgrade here");
 	auto connection = std::make_shared<WsServer::Connection>(std::move(socket));
 	connection->method = std::move(request->method);
 	connection->path = std::move(request->path);

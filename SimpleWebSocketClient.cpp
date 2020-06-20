@@ -38,14 +38,20 @@ void SimpleWebSocketClient::send(const String& message)
 
 void SimpleWebSocketClient::send(const MemoryBlock& data)
 {
+	send((const char*)data.getData(), data.getSize());
+}
+
+void SimpleWebSocketClient::send(const char* data, int numData)
+{
 	std::shared_ptr<WsClient::OutMessage> out_message = std::make_shared<WsClient::OutMessage>();
-	out_message->write((const char*)data.getData(), data.getSize());
+	out_message->write(data, numData);
 	if (connection != nullptr) connection->send(out_message, nullptr, 130);
 }
 
 
 void SimpleWebSocketClient::stop()
 {
+	if (connection != nullptr) connection->send_close(1000, "Time to split my friend");
 	if(ws != nullptr) ws->stop();
 	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(100);
 }
