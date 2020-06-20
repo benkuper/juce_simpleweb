@@ -407,7 +407,7 @@ namespace SimpleWeb {
 			std::streamsize read_length;
 			std::vector<char> buffer(buffer_size);
 			while ((read_length = stream.read(&buffer[0], buffer_size).gcount()) > 0)
-				SHA1Update(&context, (const unsigned char*)buffer.data(), static_cast<std::size_t>(read_length));
+				SHA1Update(&context, (const unsigned char*)buffer.data(), (uint32_t)read_length);
 			
 			std::string hash;
 			hash.resize(160 / 8);
