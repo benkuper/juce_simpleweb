@@ -5,9 +5,11 @@
 
 #ifdef USE_STANDALONE_ASIO
 
+#ifdef _MSC_VER //on windows, force define _WIN32_WINNT to avoid message
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0A00
+#define _WIN32_WINNT 0x0601 //minimum version = WIN7
 #define UNDEF_AFTER
+#endif
 #endif
 
 #include "../asio/asio/include/asio.hpp"
