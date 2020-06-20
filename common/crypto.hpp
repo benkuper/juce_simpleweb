@@ -332,7 +332,7 @@ namespace SimpleWeb {
 			unsigned i;
 			unsigned char finalcount[8], c;
 
-			for (i = 0; i < 8; i++) {
+			for (i = 0; i < 8; ++i) {
 				finalcount[i] = (unsigned char)((context->count[(i >= 4 ? 0 : 1)]
 					>> ((3 - (i & 3)) * 8)) & 255);
 			}
@@ -343,7 +343,7 @@ namespace SimpleWeb {
 				SHA1Update(context, &c, 1);
 			}
 			SHA1Update(context, finalcount, 8);
-			for (i = 0; i < 20; i++) {
+			for (i = 0; i < 20; ++i) {
 				digest[i] = (unsigned char)
 					((context->state[i >> 2] >> ((3 - (i & 3)) * 8)) & 255);
 			}
