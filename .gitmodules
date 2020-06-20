@@ -1,3 +1,3 @@
 [submodule "asio"]
 	path = asio
-	url = https://github.com/chriskohlhoff/asio
+	url = https://github.com/benkuper/asio
