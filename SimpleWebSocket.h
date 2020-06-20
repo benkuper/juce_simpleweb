@@ -12,6 +12,7 @@
 
 #define USE_STANDALONE_ASIO 1
 #define NOGDI
+#define ASIO_DISABLE_SERIAL_PORT 1
 #include "websocket/server_ws.hpp"
 #include "webserver/server_http.hpp"
 
