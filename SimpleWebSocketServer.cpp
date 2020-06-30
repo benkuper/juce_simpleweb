@@ -149,7 +149,7 @@ void SimpleWebSocketServer::run()
 	wsEndpoint.on_close = std::bind(&SimpleWebSocketServer::onConnectionCloseCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 
 	http.start(std::bind(&SimpleWebSocketServer::httpStartCallback, this, std::placeholders::_1));
-	ioService->run();
+	if(ioService != nullptr) ioService->run();
 }
 
 
