@@ -143,13 +143,17 @@ void SimpleWebSocketServer::run()
 	//WebSocket init
 	auto& wsEndpoint = ws.endpoint["^/ws/?$"];
 	
-	wsEndpoint.on_message = std::bind(&SimpleWebSocketServer::onMessageCallback, this, std::placeholders::_1, std::placeholders::_2);
-	wsEndpoint.on_error = std::bind(&SimpleWebSocketServer::onErrorCallback, this, std::placeholders::_1, std::placeholders::_2);
-	wsEndpoint.on_open = std::bind(&SimpleWebSocketServer::onNewConnectionCallback, this, std::placeholders::_1);
-	wsEndpoint.on_close = std::bind(&SimpleWebSocketServer::onConnectionCloseCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+wsEndpoint.on_message = std::bind(&SimpleWebSocketServer::onMessageCallback, this, std::placeholders::_1, std::placeholders::_2);
+wsEndpoint.on_error = std::bind(&SimpleWebSocketServer::onErrorCallback, this, std::placeholders::_1, std::placeholders::_2);
+wsEndpoint.on_open = std::bind(&SimpleWebSocketServer::onNewConnectionCallback, this, std::placeholders::_1);
+wsEndpoint.on_close = std::bind(&SimpleWebSocketServer::onConnectionCloseCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 
-	http.start(std::bind(&SimpleWebSocketServer::httpStartCallback, this, std::placeholders::_1));
-	if(ioService != nullptr) ioService->run();
+http.config.timeout_request = 1;
+http.config.timeout_content = 2;
+http.config.max_request_streambuf_size = 1000000;
+http.config.thread_pool_size = 2;
+http.start(std::bind(&SimpleWebSocketServer::httpStartCallback, this, std::placeholders::_1));
+if (ioService != nullptr) ioService->run();
 }
 
 
@@ -176,7 +180,7 @@ void SimpleWebSocketServer::onConnectionCloseCallback(std::shared_ptr<WsServer::
 void SimpleWebSocketServer::onErrorCallback(std::shared_ptr<WsServer::Connection> connection, const SimpleWeb::error_code& ec)
 {
 	String id = getConnectionString(connection);
-	connectionMap.remove(id); 
+	connectionMap.remove(id);
 	webSocketListeners.call(&Listener::connectionError, id, ec.message());
 }
 
@@ -202,14 +206,14 @@ void SimpleWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpServer::Resp
 		*response << handler->handleHTTPRequest(request->content.string());
 		return;
 	}
-	
+
 	if (rootPath.exists() && rootPath.isDirectory())
 	{
-		String content = "";
+		//String content = "";
 		String contentType = "text/html";
-		int contentSize = 0;
-		File f; 
-		
+		File f;
+
+
 		String path = request->path.substr(1);
 		if (path.isEmpty()) path = "index.html";
 		f = rootPath.getChildFile(path); //substr to remove the first "/"
@@ -218,23 +222,29 @@ void SimpleWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpServer::Resp
 
 		if (f.existsAsFile())
 		{
-			contentSize = (int)f.getSize();
 			contentType = MIMETypes::getMIMEType(f.getFileExtension());
-			content = f.loadFileAsString();
+			
+			bool fileIsText = contentType.contains("text") || contentType.contains("json") || contentType.contains("script") || contentType.contains("css");
+			
+			SimpleWeb::CaseInsensitiveMultimap header;
+			header.emplace("Content-Length", String(f.getSize()).toStdString());
+			header.emplace("Content-Type", contentType.toStdString());
+			header.emplace("Accept-range", "bytes");
 
-			String result = "HTTP/1.1 200 OK";
+			response->write(SimpleWeb::StatusCode::success_ok, header);
 
-			if (contentSize == content.length()) result += "\r\nContent-Length: " + String(contentSize);
+			if (fileIsText)
+			{
+				*response << f.loadFileAsString().toStdString();
+			}
 			else
 			{
-				DBG("Content size and length mismatch (" << f.getFullPathName() << ") :" << contentSize << " <> " << content.length());
+				MemoryBlock b;
+				std::unique_ptr<FileInputStream> fs = f.createInputStream();
+				fs->readIntoMemoryBlock(b);
+				response->write((const char *)b.getData(), b.getSize());
 			}
-			result += "\r\nContent-Type: " + contentType;
-			result += "\r\n\r\n";
 
-			result += content;
-
-			*response << result;
 			return;
 		}
 		else
