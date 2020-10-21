@@ -38,7 +38,7 @@ void SimpleWebSocketClient::send(const String& message)
 
 void SimpleWebSocketClient::send(const MemoryBlock& data)
 {
-	send((const char*)data.getData(), data.getSize());
+	send((const char*)data.getData(), (int)data.getSize());
 }
 
 void SimpleWebSocketClient::send(const char* data, int numData)
