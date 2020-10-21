@@ -76,7 +76,16 @@ void SimpleWebSocketClient::run()
 
 void SimpleWebSocketClient::onMessageCallback(std::shared_ptr<WsClient::Connection> connection, std::shared_ptr<WsClient::InMessage> in_message)
 {
-	webSocketListeners.call(&Listener::messageReceived, String(in_message->string()));
+	std::string s = in_message->string();
+	if (in_message->fin_rsv_opcode == 130) //binary
+	{
+		MemoryBlock b(s.c_str(), s.size());
+		webSocketListeners.call(&Listener::dataReceived, b);
+	}
+	else //text
+	{
+		webSocketListeners.call(&Listener::messageReceived, s);
+	}
 }
 
 void SimpleWebSocketClient::onNewConnectionCallback(std::shared_ptr<WsClient::Connection> _connection)
