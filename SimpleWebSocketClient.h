@@ -47,6 +47,7 @@ public:
 		virtual ~Listener() {}
 		virtual void connectionOpened() {}
 		virtual void messageReceived(const String& message) {}
+		virtual void dataReceived(const MemoryBlock& data) {}
 		virtual void connectionClosed(int status, const String& reason) {}
 		virtual void connectionError(const String& message) {}
 	};
