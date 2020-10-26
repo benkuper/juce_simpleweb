@@ -15,6 +15,7 @@
 SimpleWebSocketClient::SimpleWebSocketClient() :
 	Thread("Web socket client"),
 	isConnected(false),
+	isClosing(false),
 	ws(nullptr)
 {
 
@@ -51,9 +52,11 @@ void SimpleWebSocketClient::send(const char* data, int numData)
 
 void SimpleWebSocketClient::stop()
 {
+	isClosing = true;
 	if (connection != nullptr) connection->send_close(1000, "Time to split my friend");
 	if(ws != nullptr) ws->stop();
 	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(1000);
+	isClosing = false;
 }
 
 
@@ -103,5 +106,5 @@ void SimpleWebSocketClient::onConnectionCloseCallback(std::shared_ptr<WsClient::
 void SimpleWebSocketClient::onErrorCallback(std::shared_ptr<WsClient::Connection> /*_connection*/, const SimpleWeb::error_code& ec)
 {
 	isConnected = false;
-	webSocketListeners.call(&Listener::connectionError, ec.message());
+	if(!isClosing) webSocketListeners.call(&Listener::connectionError, ec.message());
 }

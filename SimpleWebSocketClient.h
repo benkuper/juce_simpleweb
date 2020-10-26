@@ -29,6 +29,7 @@ public:
 
 	String serverPath;
 	bool isConnected;
+	bool isClosing;
 
 	void start(const String & serverPath);
 
