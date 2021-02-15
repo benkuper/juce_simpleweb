@@ -17,6 +17,7 @@ SimpleWebSocketServer::SimpleWebSocketServer() :
 	port(0),
 	handler(nullptr)
 {
+
 }
 
 SimpleWebSocketServer::~SimpleWebSocketServer()
@@ -203,7 +204,7 @@ void SimpleWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpServer::Resp
 {
 	if (handler != nullptr)
 	{
-		*response << handler->handleHTTPRequest(request->content.string());
+		handler->handleHTTPRequest(response, request);
 		return;
 	}
 
