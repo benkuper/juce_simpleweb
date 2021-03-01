@@ -25,9 +25,10 @@ SimpleWebSocketServer::~SimpleWebSocketServer()
 	stop();
 }
 
-void SimpleWebSocketServer::start(int _port)
+void SimpleWebSocketServer::start(int _port, const String &_wsSuffix)
 {
 	port = _port;
+	wsSuffix = _wsSuffix;
 	startThread();
 }
 
@@ -142,19 +143,19 @@ void SimpleWebSocketServer::run()
 	http.on_upgrade = std::bind(&SimpleWebSocketServer::onHTTPUpgrade, this, std::placeholders::_1, std::placeholders::_2);
 
 	//WebSocket init
-	auto& wsEndpoint = ws.endpoint["^/ws/?$"];
+	auto& wsEndpoint = ws.endpoint[("^" + wsSuffix + "/?$").toStdString()];
 	
-wsEndpoint.on_message = std::bind(&SimpleWebSocketServer::onMessageCallback, this, std::placeholders::_1, std::placeholders::_2);
-wsEndpoint.on_error = std::bind(&SimpleWebSocketServer::onErrorCallback, this, std::placeholders::_1, std::placeholders::_2);
-wsEndpoint.on_open = std::bind(&SimpleWebSocketServer::onNewConnectionCallback, this, std::placeholders::_1);
-wsEndpoint.on_close = std::bind(&SimpleWebSocketServer::onConnectionCloseCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+	wsEndpoint.on_message = std::bind(&SimpleWebSocketServer::onMessageCallback, this, std::placeholders::_1, std::placeholders::_2);
+	wsEndpoint.on_error = std::bind(&SimpleWebSocketServer::onErrorCallback, this, std::placeholders::_1, std::placeholders::_2);
+	wsEndpoint.on_open = std::bind(&SimpleWebSocketServer::onNewConnectionCallback, this, std::placeholders::_1);
+	wsEndpoint.on_close = std::bind(&SimpleWebSocketServer::onConnectionCloseCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 
-http.config.timeout_request = 1;
-http.config.timeout_content = 2;
-http.config.max_request_streambuf_size = 1000000;
-http.config.thread_pool_size = 2;
-http.start(std::bind(&SimpleWebSocketServer::httpStartCallback, this, std::placeholders::_1));
-if (ioService != nullptr) ioService->run();
+	http.config.timeout_request = 1;
+	http.config.timeout_content = 2;
+	http.config.max_request_streambuf_size = 1000000;
+	http.config.thread_pool_size = 2;
+	http.start(std::bind(&SimpleWebSocketServer::httpStartCallback, this, std::placeholders::_1));
+	if (ioService != nullptr) ioService->run();
 }
 
 
