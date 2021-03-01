@@ -29,9 +29,10 @@ public:
 
 	File rootPath;
 	int port;
+	String wsSuffix;
 	bool isConnected;
 
-	void start(int port = 8080);
+	void start(int port = 8080, const String &wsSuffix = "/ws");
 
 	void send(const String& message);
 	void send(const MemoryBlock& data);
