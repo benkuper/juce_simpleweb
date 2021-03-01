@@ -55,7 +55,8 @@ public:
 		/** Destructor. */
 		virtual ~Listener() {}
 		virtual void connectionOpened(const String &id) {}
-		virtual void messageReceived(const String& id, const String &message) {}
+		virtual void messageReceived(const String& id, const String& message) {}
+		virtual void dataReceived(const String& id, const MemoryBlock & data) {}
 		virtual void connectionClosed(const String& id, int status, const String &reason) {}
 		virtual void connectionError(const String& id, const String & message) {}
 	};
