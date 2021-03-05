@@ -210,8 +210,8 @@ void SimpleWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpServer::Resp
 {
 	if (handler != nullptr)
 	{
-		handler->handleHTTPRequest(response, request);
-		return;
+		bool handled = handler->handleHTTPRequest(response, request);
+		if(handled) return;
 	}
 
 	if (rootPath.exists() && rootPath.isDirectory())

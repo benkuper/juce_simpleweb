@@ -71,7 +71,7 @@ public:
 	{
 	public:
 		virtual ~RequestHandler() {}
-		virtual void handleHTTPRequest(std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request) = 0;
+		virtual bool handleHTTPRequest(std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request) = 0;
 	};
 
 	RequestHandler* handler;
