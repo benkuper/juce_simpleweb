@@ -210,6 +210,7 @@ void SimpleWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpServer::Resp
 {
 	if (handler != nullptr)
 	{
+
 		bool handled = handler->handleHTTPRequest(response, request);
 		if(handled) return;
 	}
@@ -219,7 +220,6 @@ void SimpleWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpServer::Resp
 		//String content = "";
 		String contentType = "text/html";
 		File f;
-
 
 		String path = request->path.substr(1);
 		if (path.isEmpty()) path = "index.html";
@@ -237,6 +237,7 @@ void SimpleWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpServer::Resp
 			header.emplace("Content-Length", String(f.getSize()).toStdString());
 			header.emplace("Content-Type", contentType.toStdString());
 			header.emplace("Accept-range", "bytes");
+			header.emplace("Access-Control-Allow-Origin", "*");
 
 			response->write(SimpleWeb::StatusCode::success_ok, header);
 
