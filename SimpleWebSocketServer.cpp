@@ -41,10 +41,15 @@ void SimpleWebSocketServerBase::send(const MemoryBlock& data)
 
 void SimpleWebSocketServerBase::stop()
 {
+
+#if !JUCE_DEBUG
+	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(500);
+#endif
+
 	stopInternal();
 
 #if JUCE_DEBUG //don't know why the order is not the same for debug and release...
-	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(100);
+	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(500);
 #endif
 
 }
@@ -73,8 +78,9 @@ SimpleWebSocketServer::SimpleWebSocketServer()
 
 SimpleWebSocketServer::~SimpleWebSocketServer()
 {
+	ws.stop();
+	http.stop();
 	if (ioService != nullptr) ioService->stop();
-	if (isConnected) ws.stop();
 }
 
 void SimpleWebSocketServer::send(const String& message)
@@ -143,14 +149,12 @@ void SimpleWebSocketServer::stopInternal()
 	for (auto& c : connections) c->send_close(1000, "Server destroyed");
 	connectionMap.clear();
 
-#if !JUCE_DEBUG
-	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(100);
-#endif
-
 	ws.stop();
 	if (ioService != nullptr) ioService->stop();
 	http.stop();
 	ioService.reset();
+
+	stopThread(1000);
 }
 
 void SimpleWebSocketServer::closeConnectionInternal(const String& id, int code, const String& reason)
@@ -311,6 +315,8 @@ SecureWebSocketServer::SecureWebSocketServer(const String& certFile, const Strin
 	ws(certFile.toStdString(), privateKeyFile.toStdString(), verifyFile.toStdString()),
 	http(certFile.toStdString(), privateKeyFile.toStdString(), verifyFile.toStdString())
 {
+	ws.config.timeout_idle = 1;
+	ws.config.timeout_request = 2;
 }
 
 SecureWebSocketServer::~SecureWebSocketServer()
