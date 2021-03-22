@@ -128,7 +128,7 @@ namespace SimpleWeb {
 			juce::MemoryBlock b(&hash[0], hash.size());
 
 			for (std::size_t c = 1; c < iterations; ++c)
-				b = juce::MD5::MD5(b.getData(), b.getSize()).getRawChecksumData();
+				b = juce::MD5(b.getData(), b.getSize()).getRawChecksumData();
 
 			return b.toString().toStdString();
 		}
