@@ -1,9 +1,9 @@
 /*
   ==============================================================================
 
-    juce_SimpleWebSocket.h
-    Created: 17 Jun 2020 11:22:54pm
-    Author:  bkupe
+	juce_SimpleWebSocket.h
+	Created: 17 Jun 2020 11:22:54pm
+	Author:  bkupe
 
   ==============================================================================
 */
@@ -13,54 +13,59 @@
 #define USE_STANDALONE_ASIO 1
 #define NOGDI
 #define ASIO_DISABLE_SERIAL_PORT 1
-#include "websocket/server_ws.hpp"
-#include "webserver/server_http.hpp"
 
 using WsServer = SimpleWeb::SocketServer<SimpleWeb::WS>;
-using HttpServer= SimpleWeb::Server<SimpleWeb::HTTP>;
+using WssServer = SimpleWeb::SocketServer<SimpleWeb::WSS>;
+using HttpServer = SimpleWeb::Server<SimpleWeb::HTTP>;
+using HttpsServer = SimpleWeb::Server<SimpleWeb::HTTPS>;
 
-class SimpleWebSocketServer :
-    public Thread
+class SimpleWebSocketServerBase :
+	public juce::Thread
 {
 public:
-
-	SimpleWebSocketServer();
-	~SimpleWebSocketServer();
+	SimpleWebSocketServerBase();
+	virtual ~SimpleWebSocketServerBase();
 
 	File rootPath;
 	int port;
 	String wsSuffix;
 	bool isConnected;
 
-	void start(int port = 8080, const String &wsSuffix = "/ws");
+	void start(int port = 8080, const String& wsSuffix = "");
 
-	void send(const String& message);
+	virtual void send(const String& message) {}
+	virtual void send(const char* data, int numData) {}
 	void send(const MemoryBlock& data);
-	void send(const char * data, int numData);
-	void sendTo(const String& message, const String& id);
-	void sendTo(const MemoryBlock& data, const String& id);
-	void sendExclude(const String& message, const StringArray excludeIds);
-	void sendExclude(const MemoryBlock& data, const StringArray excludeIds);
+	virtual void sendTo(const String& message, const String& id) {}
+	virtual void sendTo(const MemoryBlock& data, const String& id) {}
+	virtual void sendExclude(const String& message, const StringArray excludeIds) {}
+	virtual void sendExclude(const MemoryBlock& data, const StringArray excludeIds) {}
 
 	void stop();
-	void closeConnection(const String& id, int code = 1000, const String &reason = "YouKnowWhy");
+	void closeConnection(const String& id, int code = 1000, const String& reason = "YouKnowWhy");
 
-	int getNumActiveConnections() const;
+	virtual void stopInternal() {}
+	virtual void closeConnectionInternal(const String& id, int code, const String& reason) {}
+
+	virtual int getNumActiveConnections() const { return 0; }
 
 	void run() override;
+
+	virtual void initServer() {}
+
+
 
 	class  Listener
 	{
 	public:
 		/** Destructor. */
 		virtual ~Listener() {}
-		virtual void connectionOpened(const String &id) {}
+		virtual void connectionOpened(const String& id) {}
 		virtual void messageReceived(const String& id, const String& message) {}
-		virtual void dataReceived(const String& id, const MemoryBlock & data) {}
-		virtual void connectionClosed(const String& id, int status, const String &reason) {}
-		virtual void connectionError(const String& id, const String & message) {}
+		virtual void dataReceived(const String& id, const MemoryBlock& data) {}
+		virtual void connectionClosed(const String& id, int status, const String& reason) {}
+		virtual void connectionError(const String& id, const String& message) {}
 	};
-
 
 
 	ListenerList<Listener> webSocketListeners;
@@ -71,18 +76,40 @@ public:
 	{
 	public:
 		virtual ~RequestHandler() {}
-		virtual bool handleHTTPRequest(std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request) = 0;
+		virtual bool handleHTTPRequest(std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request) { return false; };
+		virtual bool handleHTTPSRequest(std::shared_ptr<HttpsServer::Response> response, std::shared_ptr<HttpsServer::Request> request) { return false; };
 	};
 
 	RequestHandler* handler;
 
-protected:
+};
+
+
+class SimpleWebSocketServer :
+	public SimpleWebSocketServerBase
+{
+public:
+	SimpleWebSocketServer();
+	~SimpleWebSocketServer();
+
 	WsServer ws;
 	HttpServer http;
-	
+
 	std::shared_ptr<asio::io_service> ioService;
 	HashMap<String, std::shared_ptr<WsServer::Connection>> connectionMap;
-	
+
+	virtual void send(const String& message) override;
+	virtual void send(const char* data, int numData) override;
+	virtual void sendTo(const String& message, const String& id) override;
+	virtual void sendTo(const MemoryBlock& data, const String& id) override;
+	virtual void sendExclude(const String& message, const StringArray excludeIds) override;
+	virtual void sendExclude(const MemoryBlock& data, const StringArray excludeIds) override;
+
+	virtual void stopInternal() override;
+	virtual void closeConnectionInternal(const String& id, int code, const String& reason) override;
+
+	void initServer() override;
+
 	void onMessageCallback(std::shared_ptr<WsServer::Connection> connection, std::shared_ptr<WsServer::InMessage> in_message);
 	void onNewConnectionCallback(std::shared_ptr<WsServer::Connection> connection);
 	void onConnectionCloseCallback(std::shared_ptr<WsServer::Connection> connection, int status, const std::string& /*reason*/);
@@ -92,7 +119,48 @@ protected:
 	void onHTTPUpgrade(std::unique_ptr<SimpleWeb::HTTP>& socket, std::shared_ptr<HttpServer::Request> request);
 
 	void httpDefaultCallback(std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request);
-
 	String getConnectionString(std::shared_ptr<WsServer::Connection> connection) const;
+
+	virtual int getNumActiveConnections() const;
+};
+
+class SecureWebSocketServer :
+	public SimpleWebSocketServerBase
+{
+public:
+	SecureWebSocketServer(const String & certFile, const String & privateKeyFile, const String & verifyFile = String());
+	~SecureWebSocketServer();
+
+	WssServer ws;
+	HttpsServer http;
+
+	std::shared_ptr<asio::io_service> ioService;
+	HashMap<String, std::shared_ptr<WssServer::Connection>> connectionMap;
+
+	virtual void send(const String& message) override;
+	virtual void send(const char* data, int numData) override;
+	virtual void sendTo(const String& message, const String& id) override;
+	virtual void sendTo(const MemoryBlock& data, const String& id) override;
+	virtual void sendExclude(const String& message, const StringArray excludeIds) override;
+	virtual void sendExclude(const MemoryBlock& data, const StringArray excludeIds) override;
+	
+	virtual void stopInternal() override;
+	virtual void closeConnectionInternal(const String& id, int code, const String& reason) override;
+
+
+	void initServer() override;
+
+	void onMessageCallback(std::shared_ptr<WssServer::Connection> connection, std::shared_ptr<WssServer::InMessage> in_message);
+	void onNewConnectionCallback(std::shared_ptr<WssServer::Connection> connection);
+	void onConnectionCloseCallback(std::shared_ptr<WssServer::Connection> connection, int status, const std::string& /*reason*/);
+	void onErrorCallback(std::shared_ptr<WssServer::Connection> connection, const SimpleWeb::error_code& ec);
+
+	void httpStartCallback(unsigned short port);
+	void onHTTPUpgrade(std::unique_ptr<SimpleWeb::HTTPS>& socket, std::shared_ptr<HttpsServer::Request> request);
+
+	void httpDefaultCallback(std::shared_ptr<HttpsServer::Response> response, std::shared_ptr<HttpsServer::Request> request);
+	String getConnectionString(std::shared_ptr<WssServer::Connection> connection) const;
+
+	virtual int getNumActiveConnections() const;
 };
 

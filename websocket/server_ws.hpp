@@ -1,6 +1,5 @@
-#pragma once
-
-#pragma warning(disable:4456 4457 4458 4244 4239)
+#ifndef SIMPLE_WEB_SERVER_WS_HPP
+#define SIMPLE_WEB_SERVER_WS_HPP
 
 #include "../common/asio_compatibility.hpp"
 #include "../common/crypto.hpp"
@@ -14,6 +13,8 @@
 #include <memory>
 #include <thread>
 #include <unordered_set>
+
+#pragma warning(disable:4458 4244)
 
 // Late 2017 TODO: remove the following checks and always use std::regex
 #ifdef USE_BOOST_REGEX
@@ -88,34 +89,10 @@ namespace SimpleWeb {
 
       regex::smatch path_match;
 
-      const asio::ip::tcp::endpoint &remote_endpoint() const noexcept {
-        return endpoint;
-      }
-
-      /// Deprecated, please use remote_endpoint().address().to_string() instead.
-      DEPRECATED std::string remote_endpoint_address() const noexcept {
-        try {
-          return socket->lowest_layer().remote_endpoint().address().to_string();
-        }
-        catch(...) {
-        }
-        return std::string();
-      }
-
-      /// Deprecated, please use remote_endpoint().port() instead.
-      DEPRECATED unsigned short remote_endpoint_port() const noexcept {
-        try {
-          return socket->lowest_layer().remote_endpoint().port();
-        }
-        catch(...) {
-        }
-        return 0;
-      }
-
     private:
-      /// Used to call Server::upgrade.
+      /// Used to call SocketServer::upgrade.
       template <typename... Args>
-      Connection(std::shared_ptr<ScopeRunner> handler_runner_, long timeout_idle, Args &&... args) noexcept
+      Connection(std::shared_ptr<ScopeRunner> handler_runner_, long timeout_idle, Args &&...args) noexcept
           : handler_runner(std::move(handler_runner_)), socket(new socket_type(std::forward<Args>(args)...)), timeout_idle(timeout_idle), closed(false) {}
 
       std::shared_ptr<ScopeRunner> handler_runner;
@@ -132,7 +109,7 @@ namespace SimpleWeb {
 
       std::atomic<bool> closed;
 
-      asio::ip::tcp::endpoint endpoint; // The endpoint is read in Server::write_handshake and must be stored so that it can be read reliably in all handlers, including on_error
+      asio::ip::tcp::endpoint endpoint; // The endpoint is read in SocketServer::write_handshake and must be stored so that it can be read reliably in all handlers, including on_error
 
       void close() noexcept {
         error_code ec;
@@ -151,7 +128,7 @@ namespace SimpleWeb {
           return;
         }
 
-        timer = std::unique_ptr<asio::steady_timer>(new asio::steady_timer(get_socket_executor(*socket), std::chrono::seconds(seconds)));
+        timer = make_steady_timer(*socket, std::chrono::seconds(seconds));
         std::weak_ptr<Connection> connection_weak(this->shared_from_this()); // To avoid keeping Connection instance alive longer than needed
         timer->async_wait([connection_weak](const error_code &ec) {
           if(!ec) {
@@ -196,7 +173,7 @@ namespace SimpleWeb {
           if(!lock)
             return;
           {
-            LockGuard lock(self->send_queue_mutex);
+            LockGuard _lock(self->send_queue_mutex);
             if(!ec) {
               auto it = self->send_queue.begin();
               auto callback = std::move(it->callback);
@@ -204,7 +181,7 @@ namespace SimpleWeb {
               if(self->send_queue.size() > 0)
                 self->send_from_queue();
 
-              lock.unlock();
+              _lock.unlock();
               if(callback)
                 callback(ec);
             }
@@ -217,7 +194,7 @@ namespace SimpleWeb {
               }
               self->send_queue.clear();
 
-              lock.unlock();
+              _lock.unlock();
               for(auto &callback : callbacks)
                 callback(ec);
             }
@@ -261,7 +238,7 @@ namespace SimpleWeb {
       /// Convenience function for sending a string.
       /// fin_rsv_opcode: 129=one fragment, text, 130=one fragment, binary, 136=close connection.
       /// See http://tools.ietf.org/html/rfc6455#section-5.2 for more information.
-      void send(string_view out_message_str, std::function<void(const error_code &)> callback = nullptr, unsigned char fin_rsv_opcode = 129) {
+      void send(std::string_view out_message_str, std::function<void(const error_code &)> callback = nullptr, unsigned char fin_rsv_opcode = 129) {
         auto out_message = std::make_shared<OutMessage>();
         out_message->write(out_message_str.data(), static_cast<std::streamsize>(out_message_str.size()));
         send(out_message, std::move(callback), fin_rsv_opcode);
@@ -282,6 +259,40 @@ namespace SimpleWeb {
 
         // fin_rsv_opcode=136: message close
         send(std::move(send_stream), std::move(callback), 136);
+      }
+
+      const asio::ip::tcp::endpoint &remote_endpoint() const noexcept {
+        return endpoint;
+      }
+
+      asio::ip::tcp::endpoint local_endpoint() const noexcept {
+        try {
+          if(auto connection = this->connection.lock())
+            return connection->socket->lowest_layer().local_endpoint();
+        }
+        catch(...) {
+        }
+        return asio::ip::tcp::endpoint();
+      }
+
+      /// Deprecated, please use remote_endpoint().address().to_string() instead.
+      DEPRECATED std::string remote_endpoint_address() const noexcept {
+        try {
+          return endpoint.address().to_string();
+        }
+        catch(...) {
+        }
+        return std::string();
+      }
+
+      /// Deprecated, please use remote_endpoint().port() instead.
+      DEPRECATED unsigned short remote_endpoint_port() const noexcept {
+        try {
+          return endpoint.port();
+        }
+        catch(...) {
+        }
+        return 0;
       }
     };
 
@@ -340,6 +351,7 @@ namespace SimpleWeb {
     /// Set before calling start().
     Config config;
 
+  private:
     class regex_orderable : public regex::regex {
     public:
       std::string str;
@@ -363,7 +375,7 @@ namespace SimpleWeb {
       std::unique_lock<std::mutex> lock(start_stop_mutex);
 
       asio::ip::tcp::endpoint endpoint;
-      if(config.address.size() > 0)
+      if(!config.address.empty())
         endpoint = asio::ip::tcp::endpoint(make_address(config.address), config.port);
       else
         endpoint = asio::ip::tcp::endpoint(asio::ip::tcp::v6(), config.port);
@@ -375,7 +387,17 @@ namespace SimpleWeb {
 
       if(!acceptor)
         acceptor = std::unique_ptr<asio::ip::tcp::acceptor>(new asio::ip::tcp::acceptor(*io_service));
-      acceptor->open(endpoint.protocol());
+      try {
+        acceptor->open(endpoint.protocol());
+      }
+      catch(const system_error &error) {
+        if(error.code() == asio::error::address_family_not_supported && config.address.empty()) {
+          endpoint = asio::ip::tcp::endpoint(asio::ip::tcp::v4(), config.port);
+          acceptor->open(endpoint.protocol());
+        }
+        else
+          throw;
+      }
       acceptor->set_option(asio::socket_base::reuse_address(config.reuse_address));
       if(config.fast_open) {
 #if defined(__linux__) && defined(TCP_FASTOPEN)
@@ -538,6 +560,12 @@ namespace SimpleWeb {
             auto sha1 = Crypto::sha1(key_it->second + ws_magic_string);
             response_header.emplace("Sec-WebSocket-Accept", Crypto::Base64::encode(sha1));
 
+            try {
+              connection->endpoint = connection->socket->lowest_layer().remote_endpoint();
+            }
+            catch(...) {
+            }
+
             if(regex_endpoint.second.on_handshake)
               status_code = regex_endpoint.second.on_handshake(connection, response_header);
 
@@ -560,12 +588,6 @@ namespace SimpleWeb {
               return;
             if(status_code != StatusCode::information_switching_protocols)
               return;
-
-            try {
-              connection->endpoint = connection->socket->lowest_layer().remote_endpoint();
-            }
-            catch(...) {
-            }
 
             if(!ec) {
               connection_open(connection, regex_endpoint.second);
@@ -593,7 +615,7 @@ namespace SimpleWeb {
           }
           std::istream istream(&connection->streambuf);
 
-          std::array<unsigned char, 2> first_bytes = {0,0};
+          std::array<unsigned char, 2> first_bytes;
           istream.read((char *)&first_bytes[0], 2);
 
           unsigned char fin_rsv_opcode = first_bytes[0];
@@ -619,7 +641,7 @@ namespace SimpleWeb {
               if(!ec) {
                 std::istream istream(&connection->streambuf);
 
-                std::array<unsigned char, 2> length_bytes = {0,0};
+                std::array<unsigned char, 2> length_bytes;
                 istream.read((char *)&length_bytes[0], 2);
 
                 std::size_t length = 0;
@@ -644,7 +666,7 @@ namespace SimpleWeb {
               if(!ec) {
                 std::istream istream(&connection->streambuf);
 
-                std::array<unsigned char, 8> length_bytes  = {0,0,0,0,0,0,0,0};
+                std::array<unsigned char, 8> length_bytes;
                 istream.read((char *)&length_bytes[0], 8);
 
                 std::size_t length = 0;
@@ -685,7 +707,7 @@ namespace SimpleWeb {
           std::istream istream(&connection->streambuf);
 
           // Read mask
-          std::array<unsigned char, 4> mask = {0,0};
+          std::array<unsigned char, 4> mask;
           istream.read((char *)&mask[0], 4);
 
           std::shared_ptr<InMessage> in_message;
@@ -823,3 +845,5 @@ namespace SimpleWeb {
     }
   };
 } // namespace SimpleWeb
+
+#endif /* SIMPLE_WEB_SERVER_WS_HPP */

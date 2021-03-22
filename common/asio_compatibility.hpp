@@ -4,20 +4,8 @@
 #include <memory>
 
 #ifdef USE_STANDALONE_ASIO
-
-#ifdef _MSC_VER //on windows, force define _WIN32_WINNT to avoid message
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0601 //minimum version = WIN7
-#define UNDEF_AFTER
-#endif
-#endif
-
-#include "../asio/asio/include/asio.hpp"
-#include "../asio/asio/include/asio/steady_timer.hpp"
-
-#ifdef UNDEF_AFTER
-#undef _WIN32_WINNT
-#endif
+#include "../asio.hpp"
+#include "../asio/steady_timer.hpp"
 
 namespace SimpleWeb {
   namespace error = asio::error;
@@ -55,9 +43,9 @@ namespace SimpleWeb {
   inline asio::ip::address make_address(const std::string &str) noexcept {
     return asio::ip::make_address(str);
   }
-  template <typename socket_type>
-  asio::executor get_socket_executor(socket_type &socket) {
-    return socket.get_executor();
+  template <typename socket_type, typename duration_type>
+  std::unique_ptr<asio::steady_timer> make_steady_timer(socket_type &socket, std::chrono::duration<duration_type> duration) {
+    return std::unique_ptr<asio::steady_timer>(new asio::steady_timer(socket.get_executor(), duration));
   }
   template <typename handler_type>
   void async_resolve(asio::ip::tcp::resolver &resolver, const std::pair<std::string, std::string> &host_port, handler_type &&handler) {
@@ -81,9 +69,9 @@ namespace SimpleWeb {
   inline asio::ip::address make_address(const std::string &str) noexcept {
     return asio::ip::address::from_string(str);
   }
-  template <typename socket_type>
-  io_context &get_socket_executor(socket_type &socket) {
-    return socket.get_io_service();
+  template <typename socket_type, typename duration_type>
+  std::unique_ptr<asio::steady_timer> make_steady_timer(socket_type &socket, std::chrono::duration<duration_type> duration) {
+    return std::unique_ptr<asio::steady_timer>(new asio::steady_timer(socket.get_io_service(), duration));
   }
   template <typename handler_type>
   void async_resolve(asio::ip::tcp::resolver &resolver, const std::pair<std::string, std::string> &host_port, handler_type &&handler) {

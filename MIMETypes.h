@@ -15,9 +15,9 @@ class MIMETypes
 public:
 
     static bool isInit;
-    static HashMap<String, String> mimeTypes;
+    static juce::HashMap<juce::String, juce::String> mimeTypes;
 
-    static String getMIMEType(const String& extension)
+    static juce::String getMIMEType(const juce::String& extension)
     {
         if (!isInit)
         {
@@ -104,4 +104,4 @@ protected:
 };
 
 bool MIMETypes::isInit = false;
-HashMap<String, String> MIMETypes::mimeTypes;
+juce::HashMap<juce::String, juce::String> MIMETypes::mimeTypes;

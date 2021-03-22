@@ -1,16 +1,18 @@
 #ifndef SIMPLE_WEB_CLIENT_WS_HPP
 #define SIMPLE_WEB_CLIENT_WS_HPP
 
-#include "../common/asio_compatibility.hpp"
-#include "../common/crypto.hpp"
-#include "../common/mutex.hpp"
-#include "../common/utility.hpp"
+#include  "../common/asio_compatibility.hpp"
+#include  "../common/crypto.hpp"
+#include  "../common/mutex.hpp"
+#include  "../common/utility.hpp"
 #include <array>
 #include <atomic>
 #include <iostream>
 #include <limits>
 #include <list>
 #include <random>
+
+#pragma warning(disable:4457 4458 4244)
 
 namespace SimpleWeb {
   template <class socket_type>
@@ -70,7 +72,7 @@ namespace SimpleWeb {
 
     private:
       template <typename... Args>
-      Connection(std::shared_ptr<ScopeRunner> handler_runner_, long timeout_idle, Args &&... args) noexcept
+      Connection(std::shared_ptr<ScopeRunner> handler_runner_, long timeout_idle, Args &&...args) noexcept
           : handler_runner(std::move(handler_runner_)), socket(new socket_type(std::forward<Args>(args)...)), timeout_idle(timeout_idle), closed(false) {}
 
       std::shared_ptr<ScopeRunner> handler_runner;
@@ -85,6 +87,8 @@ namespace SimpleWeb {
       std::unique_ptr<asio::steady_timer> timer GUARDED_BY(timer_mutex);
 
       std::atomic<bool> closed;
+
+      asio::ip::tcp::endpoint endpoint; // The endpoint is read in SocketClient::upgrade and must be stored so that it can be read reliably in all handlers, including on_error
 
       void close() noexcept {
         error_code ec;
@@ -106,7 +110,7 @@ namespace SimpleWeb {
           return;
         }
 
-        timer = std::unique_ptr<asio::steady_timer>(new asio::steady_timer(get_socket_executor(*socket), std::chrono::seconds(seconds)));
+        timer = make_steady_timer(*socket, std::chrono::seconds(seconds));
         std::weak_ptr<Connection> connection_weak(this->shared_from_this()); // To avoid keeping Connection instance alive longer than needed
         timer->async_wait([connection_weak, use_timeout_idle](const error_code &ec) {
           if(!ec) {
@@ -151,7 +155,7 @@ namespace SimpleWeb {
           if(!lock)
             return;
           {
-            LockGuard lock(self->send_queue_mutex);
+            LockGuard _lock(self->send_queue_mutex);
             if(!ec) {
               auto it = self->send_queue.begin();
               auto callback = std::move(it->callback);
@@ -159,7 +163,7 @@ namespace SimpleWeb {
               if(self->send_queue.size() > 0)
                 self->send_from_queue();
 
-              lock.unlock();
+              _lock.unlock();
               if(callback)
                 callback(ec);
             }
@@ -172,7 +176,7 @@ namespace SimpleWeb {
               }
               self->send_queue.clear();
 
-              lock.unlock();
+              _lock.unlock();
               for(auto &callback : callbacks)
                 callback(ec);
             }
@@ -185,7 +189,7 @@ namespace SimpleWeb {
       /// See http://tools.ietf.org/html/rfc6455#section-5.2 for more information.
       void send(const std::shared_ptr<OutMessage> &out_message, std::function<void(const error_code &)> callback = nullptr, unsigned char fin_rsv_opcode = 129) {
         // Create mask
-        std::array<unsigned char, 4> mask = {0,0,0,0};
+        std::array<unsigned char, 4> mask;
         std::uniform_int_distribution<unsigned short> dist(0, 255);
         std::random_device rd;
         for(std::size_t c = 0; c < 4; c++)
@@ -252,6 +256,10 @@ namespace SimpleWeb {
         // fin_rsv_opcode=136: message close
         send(out_message, std::move(callback), 136);
       }
+
+      const asio::ip::tcp::endpoint &remote_endpoint() const noexcept {
+        return endpoint;
+      }
     };
 
     class Config {
@@ -273,6 +281,8 @@ namespace SimpleWeb {
       CaseInsensitiveMultimap header;
       /// Set proxy server (server:port)
       std::string proxy_server;
+      /// Set proxy authorization (username:password)
+      std::string proxy_auth;
     };
     /// Set before calling start().
     Config config;
@@ -314,7 +324,7 @@ namespace SimpleWeb {
       std::lock_guard<std::mutex> lock(start_stop_mutex);
 
       {
-        LockGuard lock(connection_mutex);
+        LockGuard _lock(connection_mutex);
         if(connection)
           connection->close();
       }
@@ -409,6 +419,12 @@ namespace SimpleWeb {
         ostream << header_field.first << ": " << header_field.second << "\r\n";
       ostream << "\r\n";
 
+      try {
+        connection->endpoint = connection->socket->lowest_layer().remote_endpoint();
+      }
+      catch(...) {
+      }
+
       connection->in_message = std::shared_ptr<InMessage>(new InMessage());
 
       connection->set_timeout(config.timeout_request);
@@ -472,7 +488,7 @@ namespace SimpleWeb {
           }
           auto updated_num_additional_bytes = num_additional_bytes > 2 ? num_additional_bytes - 2 : 0;
 
-          std::array<unsigned char, 2> first_bytes = {0,0};
+          std::array<unsigned char, 2> first_bytes;
           connection->in_message->read(reinterpret_cast<char *>(&first_bytes[0]), 2);
 
           connection->in_message->fin_rsv_opcode = first_bytes[0];
@@ -496,7 +512,7 @@ namespace SimpleWeb {
               if(!lock)
                 return;
               if(!ec) {
-                std::array<unsigned char, 2> length_bytes = {0,0};
+                std::array<unsigned char, 2> length_bytes;
                 connection->in_message->read(reinterpret_cast<char *>(&length_bytes[0]), 2);
 
                 std::size_t length = 0;
@@ -520,7 +536,7 @@ namespace SimpleWeb {
               if(!lock)
                 return;
               if(!ec) {
-                std::array<unsigned char, 8> length_bytes = {0,0,0,0,0,0,0,0};
+                std::array<unsigned char, 8> length_bytes;
                 connection->in_message->read(reinterpret_cast<char *>(&length_bytes[0]), 8);
 
                 std::size_t length = 0;
