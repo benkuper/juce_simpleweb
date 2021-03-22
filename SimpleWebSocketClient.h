@@ -1,9 +1,9 @@
 /*
   ==============================================================================
 
-    juce_SimpleWebSocket.h
-    Created: 17 Jun 2020 11:22:54pm
-    Author:  bkupe
+	juce_SimpleWebSocket.h
+	Created: 17 Jun 2020 11:22:54pm
+	Author:  bkupe
 
   ==============================================================================
 */
@@ -13,38 +13,44 @@
 #define USE_STANDALONE_ASIO 1
 #define NOGDI
 #define ASIO_DISABLE_SERIAL_PORT 1
-#include "websocket/client_ws.hpp"
-//#include "webserver/server_http.hpp"
 
 using WsClient = SimpleWeb::SocketClient<SimpleWeb::WS>;
-//using HttpServer = SimpleWeb::Server<SimpleWeb::HTTP>;
+using WssClient = SimpleWeb::SocketClient<SimpleWeb::WSS>;
 
-class SimpleWebSocketClient :
+class SimpleWebSocketClientBase :
 	public Thread
 {
 public:
+	SimpleWebSocketClientBase();
 
-	SimpleWebSocketClient();
-	~SimpleWebSocketClient();
+	virtual ~SimpleWebSocketClientBase();
 
 	String serverPath;
 	bool isConnected;
 	bool isClosing;
 
-	void start(const String & serverPath);
+	virtual void start(const String& _serverPath);
 
-	void send(const String& message);
+	virtual void send(const String& message) {}
+	virtual void send(const char* data, int numData) {}
+
 	void send(const MemoryBlock& data);
-	void send(const char* data, int numData);
 
 	void stop();
+	virtual void stopInternal() {}
+	virtual void run();
 
-	void run() override;
+	virtual void initWS() {}
 
-	class  Listener
+
+	void handleMessageCallback(const String& s, int opCode);
+	void handleNewConnectionCallback();
+	void handleConnectionClosedCallback(int status, const String &reason);
+	void handleErrorCallback(const String& message);
+
+	class Listener
 	{
 	public:
-		/** Destructor. */
 		virtual ~Listener() {}
 		virtual void connectionOpened() {}
 		virtual void messageReceived(const String& message) {}
@@ -53,19 +59,54 @@ public:
 		virtual void connectionError(const String& message) {}
 	};
 
-
-
 	ListenerList<Listener> webSocketListeners;
 	void addWebSocketListener(Listener* newListener) { webSocketListeners.add(newListener); }
 	void removeWebSocketListener(Listener* listener) { webSocketListeners.remove(listener); }
+};
 
+class SimpleWebSocketClient :
+	public SimpleWebSocketClientBase
+{
 
-protected:
+public:
+
 	std::unique_ptr<WsClient> ws;
 	std::shared_ptr<WsClient::Connection> connection;
 
+	SimpleWebSocketClient();
+	~SimpleWebSocketClient();
+
+	void send(const String& message) override;
+	void send(const char* data, int numData) override;
+	void stopInternal() override;
+	
+	void initWS() override;
+
 	void onMessageCallback(std::shared_ptr<WsClient::Connection> connection, std::shared_ptr<WsClient::InMessage> in_message);
-	void onNewConnectionCallback(std::shared_ptr<WsClient::Connection> connection);
-	void onConnectionCloseCallback(std::shared_ptr<WsClient::Connection> connection, int status, const std::string& /*reason*/);
-	void onErrorCallback(std::shared_ptr<WsClient::Connection> connection, const SimpleWeb::error_code& ec);
+	void onNewConnectionCallback(std::shared_ptr<WsClient::Connection> _connection);
+	void onConnectionCloseCallback(std::shared_ptr<WsClient::Connection> /*_connection*/, int status, const std::string& reason);
+	void onErrorCallback(std::shared_ptr<WsClient::Connection> /*_connection*/, const SimpleWeb::error_code& ec);
+};
+
+class SecureWebSocketClient :
+	public SimpleWebSocketClientBase
+{
+
+public:
+	std::unique_ptr<WssClient> ws;
+	std::shared_ptr<WssClient::Connection> connection;
+
+	SecureWebSocketClient();
+	~SecureWebSocketClient();
+
+	void send(const String& message) override;
+	void send(const char* data, int numData) override;
+	void stopInternal() override;
+
+	void initWS() override;
+
+	void onMessageCallback(std::shared_ptr<WssClient::Connection> connection, std::shared_ptr<WssClient::InMessage> in_message);
+	void onNewConnectionCallback(std::shared_ptr<WssClient::Connection> _connection);
+	void onConnectionCloseCallback(std::shared_ptr<WssClient::Connection> /*_connection*/, int status, const std::string& reason);
+	void onErrorCallback(std::shared_ptr<WssClient::Connection> /*_connection*/, const SimpleWeb::error_code& ec);
 };

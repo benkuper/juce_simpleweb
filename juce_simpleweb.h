@@ -41,12 +41,26 @@
  #pragma warning (disable: 4251 4786 4668 4820 4100 4267)
 #endif
 
-#include <juce_core/juce_core.h>
-#include <juce_events/juce_events.h>
-#include <juce_gui_basics/juce_gui_basics.h>
 
+#define USE_STANDALONE_ASIO 1
+#define NOGDI
+#define ASIO_DISABLE_SERIAL_PORT 1
+
+#include <juce_core/juce_core.h>
+#include <juce_cryptography/juce_cryptography.h>
+
+#define _WIN32_WINDOWS 0x601
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+
+#include "common/crypto.hpp"
+
+#include <juce_events/juce_events.h>
 
 using namespace juce;
+
+#include "websocket/server_wss.hpp"
+#include "webserver/server_https.hpp"
+#include "websocket/client_wss.hpp"
 
 #include "SimpleWebSocketServer.h"
 #include "SimpleWebSocketClient.h"

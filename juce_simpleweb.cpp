@@ -20,6 +20,4 @@
 
 //==============================================================================
 
-
 #include "SimpleWebSocketServer.cpp"
-#include "SimpleWebSocketClient.cpp"
