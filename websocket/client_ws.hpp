@@ -412,7 +412,7 @@ namespace SimpleWeb {
       for(std::size_t c = 0; c < 16; c++)
         nonce += static_cast<char>(dist(rd));
 
-      auto nonce_base64 = std::make_shared<std::string>(Crypto::Base64::encode(nonce));
+      auto nonce_base64 = std::make_shared<std::string>(juce::Base64::toBase64(nonce).toStdString());
       ostream << "Sec-WebSocket-Key: " << *nonce_base64 << "\r\n";
       ostream << "Sec-WebSocket-Version: 13\r\n";
       for(auto &header_field : config.header)
@@ -457,8 +457,17 @@ namespace SimpleWeb {
               }
               auto header_it = connection->header.find("Sec-WebSocket-Accept");
               static auto ws_magic_string = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-              if(header_it != connection->header.end() &&
-                 Crypto::Base64::decode(header_it->second) == Crypto::sha1(*nonce_base64 + ws_magic_string)) {
+
+              MemoryOutputStream b64Decoded;
+              juce::Base64::convertFromBase64(b64Decoded, header_it->second);
+              String b64Str = b64Decoded.toString();
+              
+              OrganicCrypto::SHA1 sha1;
+              String sInput = String(*nonce_base64 + ws_magic_string);
+              sha1.update(sInput.getCharPointer(), sInput.length());
+              String sha1Str = sha1.finalize().toString();
+
+              if(header_it != connection->header.end() && b64Str == sha1Str) {
                 this->connection_open(connection);
                 read_message(connection, num_additional_bytes);
               }
