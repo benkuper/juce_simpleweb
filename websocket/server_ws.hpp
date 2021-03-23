@@ -558,9 +558,17 @@ namespace SimpleWeb {
             response_header.emplace("Connection", "Upgrade");
             static auto ws_magic_string = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-            String sha1Str = WSCrypto::SHA1::convert(String(key_it->second + ws_magic_string));
-            //auto sha1 = Crypto::sha1(key_it->second + ws_magic_string);
-            response_header.emplace("Sec-WebSocket-Accept", juce::Base64::toBase64(sha1Str).toStdString());
+            
+            std::string inSha = key_it->second + ws_magic_string;
+            unsigned char hash[20];
+            WSCrypto::calcSha1(inSha.c_str(), inSha.size(), hash);
+
+            std::string hexString((const char*)hash);
+            hexString.resize(20);
+
+            std::string b64 = WSCrypto::base64_encode((const unsigned char *)hexString.c_str(), hexString.size());
+
+            response_header.emplace("Sec-WebSocket-Accept", b64);
 
             try {
               connection->endpoint = connection->socket->lowest_layer().remote_endpoint();

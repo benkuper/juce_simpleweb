@@ -435,7 +435,7 @@ void SecureWebSocketServer::initServer()
 
 	//WebSocket init
 	ws.reset(new WssServer(certFile.toStdString(), keyFile.toStdString(), verifyFile.toStdString()));
-	ws->config.timeout_idle = 1;
+	//ws->config.timeout_idle = 1;
 	ws->config.timeout_request = 2;
 
 	auto& wsEndpoint = ws->endpoint[("^" + wsSuffix + "/?$").toStdString()];

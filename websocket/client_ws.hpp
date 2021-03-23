@@ -412,7 +412,10 @@ namespace SimpleWeb {
       for(std::size_t c = 0; c < 16; c++)
         nonce += static_cast<char>(dist(rd));
 
-      auto nonce_base64 = std::make_shared<std::string>(juce::Base64::toBase64(nonce).toStdString());
+      auto nonce_base64 = std::make_shared<std::string>(WSCrypto::base64_encode((const unsigned char *)nonce.c_str(), nonce.size()));
+
+      std::string test = Crypto::Base64::encode(nonce);
+
       ostream << "Sec-WebSocket-Key: " << *nonce_base64 << "\r\n";
       ostream << "Sec-WebSocket-Version: 13\r\n";
       for(auto &header_field : config.header)
@@ -458,13 +461,17 @@ namespace SimpleWeb {
               auto header_it = connection->header.find("Sec-WebSocket-Accept");
               static auto ws_magic_string = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-              MemoryOutputStream b64Decoded;
-              juce::Base64::convertFromBase64(b64Decoded, header_it->second);
-              String b64Str = b64Decoded.toString();
-              
-              String sha1Str = WSCrypto::SHA1::convert(String(*nonce_base64 + ws_magic_string));
-              
-              if(header_it != connection->header.end() && b64Str == sha1Str) {
+              std::string b64 = WSCrypto::base64_decode(header_it->second);
+              std::string test2 = Crypto::Base64::decode(header_it->second);
+
+              std::string inSha = *nonce_base64 + ws_magic_string;
+              unsigned char hash[20];
+              WSCrypto::calcSha1(inSha.c_str(),inSha.size(), hash);
+
+              std::string hexString((const char *)hash);
+              hexString.resize(20);
+
+              if(header_it != connection->header.end() && strcmp(b64.c_str(), hexString.c_str()) == 0) {
                 this->connection_open(connection);
                 read_message(connection, num_additional_bytes);
               }
