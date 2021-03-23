@@ -75,10 +75,10 @@ namespace WSCrypto
 		m_count[1] = 0;
 	}
 
-	void SHA1::transform(uint32* state, const uint8* buffer)
+	void SHA1::transform(juce::uint32* state, const juce::uint8* buffer)
 	{
 		// Copy state[] to working vars
-		uint32 a = state[0], b = state[1], c = state[2], d = state[3], e = state[4];
+		juce::uint32 a = state[0], b = state[1], c = state[2], d = state[3], e = state[4];
 
 		memcpy(m_block, buffer, 64);
 
@@ -116,10 +116,10 @@ namespace WSCrypto
 	}
 
 	// Use this function to hash in binary data and strings
-	void SHA1::update(const void* data_, uint32 len)
+	void SHA1::update(const void* data_, juce::uint32 len)
 	{
-		uint32 i, j;
-		uint8* data = (uint8*)data_;
+		juce::uint32 i, j;
+		juce::uint8* data = (juce::uint8*)data_;
 
 		j = (m_count[0] >> 3) & 63;
 
@@ -144,7 +144,7 @@ namespace WSCrypto
 
 	void SHA1::update(juce::MemoryBlock& data)
 	{
-		update((uint8*)data.getData(), (uint32)data.getSize());
+		update((juce::uint8*)data.getData(), (juce::uint32)data.getSize());
 	}
 
 	juce::MemoryBlock SHA1::finalize()
@@ -153,19 +153,19 @@ namespace WSCrypto
 		juce::uint8 finalcount[8];
 
 		for (i = 0; i < 8; ++i)
-			finalcount[i] = (uint8)((m_count[((i >= 4) ? 0 : 1)]
+			finalcount[i] = (juce::uint8)((m_count[((i >= 4) ? 0 : 1)]
 				>> ((3 - (i & 3)) * 8)) & 255); // Endian independent
 
-		update((uint8*)"\200", 1);
+		update((juce::uint8*)"\200", 1);
 
 		while ((m_count[0] & 504) != 448)
-			update((uint8*)"\0", 1);
+			update((juce::uint8*)"\0", 1);
 
 		update(finalcount, 8); // Cause a SHA1Transform()
 
 		for (i = 0; i < 20; ++i)
 		{
-			m_digest[i] = (uint8)((m_state[i >> 2] >> ((3 - (i & 3)) * 8)) & 255);
+			m_digest[i] = (juce::uint8)((m_state[i >> 2] >> ((3 - (i & 3)) * 8)) & 255);
 		}
 
 		// Wipe variables for security reasons
