@@ -24,7 +24,7 @@
 
   linuxLibs:        
   OSXLibs:          
-  windowsLibs:      
+  windowsLibs:      openssl,libssl,libcrypto
   
  END_JUCE_MODULE_DECLARATION
 

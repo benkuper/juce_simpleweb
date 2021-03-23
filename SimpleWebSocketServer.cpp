@@ -311,6 +311,8 @@ void SimpleWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpServer::Resp
 
 //SECURE
 
+#if JUCE_WINDOWS
+
 SecureWebSocketServer::SecureWebSocketServer(const String& certFile, const String& privateKeyFile, const String& verifyFile) :
 	ws(certFile.toStdString(), privateKeyFile.toStdString(), verifyFile.toStdString()),
 	http(certFile.toStdString(), privateKeyFile.toStdString(), verifyFile.toStdString())
@@ -548,3 +550,5 @@ void SecureWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpsServer::Res
 
 	*response << "HTTP/1.1 404 Not Found";
 }
+
+#endif
