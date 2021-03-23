@@ -55,6 +55,8 @@
 #include "common/crypto.hpp"
 #endif
 
+#include "common/SHA1.h" //remove openssl dep for non supported OS
+
 #include <juce_events/juce_events.h>
 
 using namespace juce;

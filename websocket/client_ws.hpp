@@ -462,11 +462,8 @@ namespace SimpleWeb {
               juce::Base64::convertFromBase64(b64Decoded, header_it->second);
               String b64Str = b64Decoded.toString();
               
-              OrganicCrypto::SHA1 sha1;
-              String sInput = String(*nonce_base64 + ws_magic_string);
-              sha1.update(sInput.getCharPointer(), sInput.length());
-              String sha1Str = sha1.finalize().toString();
-
+              String sha1Str = WSCrypto::SHA1::convert(String(*nonce_base64 + ws_magic_string));
+              
               if(header_it != connection->header.end() && b64Str == sha1Str) {
                 this->connection_open(connection);
                 read_message(connection, num_additional_bytes);

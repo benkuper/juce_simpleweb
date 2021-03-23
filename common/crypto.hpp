@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 
-#
 #include "../openssl/buffer.h"
 #include "../openssl/evp.h"
 #include "../openssl/md5.h"

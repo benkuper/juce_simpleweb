@@ -19,5 +19,5 @@
 #include "juce_simpleweb.h"
 
 //==============================================================================
-
+#include "common/SHA1.cpp"
 #include "SimpleWebSocketServer.cpp"

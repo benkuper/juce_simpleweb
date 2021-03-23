@@ -558,10 +558,7 @@ namespace SimpleWeb {
             response_header.emplace("Connection", "Upgrade");
             static auto ws_magic_string = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-            OrganicCrypto::SHA1 sha1;
-            String sInput = String(key_it->second + ws_magic_string);
-            sha1.update(sInput.getCharPointer(), sInput.length());
-            String sha1Str = sha1.finalize().toString();
+            String sha1Str = WSCrypto::SHA1::convert(String(key_it->second + ws_magic_string));
             //auto sha1 = Crypto::sha1(key_it->second + ws_magic_string);
             response_header.emplace("Sec-WebSocket-Accept", juce::Base64::toBase64(sha1Str).toStdString());
 
