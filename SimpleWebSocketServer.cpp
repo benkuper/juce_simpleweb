@@ -78,9 +78,7 @@ SimpleWebSocketServer::SimpleWebSocketServer()
 
 SimpleWebSocketServer::~SimpleWebSocketServer()
 {
-	ws.stop();
-	http.stop();
-	if (ioService != nullptr) ioService->stop();
+	stop();
 }
 
 void SimpleWebSocketServer::send(const String& message)
@@ -145,13 +143,20 @@ void SimpleWebSocketServer::sendExclude(const MemoryBlock& data, const StringArr
 
 void SimpleWebSocketServer::stopInternal()
 {
-	std::unordered_set<std::shared_ptr<WsServer::Connection>> connections = ws.get_connections();
-	for (auto& c : connections) c->send_close(1000, "Server destroyed");
-	connectionMap.clear();
+	if (ws != nullptr)
+	{
+		std::unordered_set<std::shared_ptr<WsServer::Connection>> connections = ws->get_connections();
+		for (auto& c : connections) c->send_close(1000, "Server destroyed");
+		connectionMap.clear();
 
-	ws.stop();
+		ws->stop();
+	}
+	
 	if (ioService != nullptr) ioService->stop();
-	http.stop();
+	if(http != nullptr) http->stop();
+
+	ws.reset();
+	http.reset();
 	ioService.reset();
 
 	stopThread(1000);
@@ -166,25 +171,28 @@ void SimpleWebSocketServer::closeConnectionInternal(const String& id, int code, 
 void SimpleWebSocketServer::initServer()
 {
 	ioService = std::make_shared<asio::io_service>();
-	http.config.port = port;
-	http.io_service = ioService;
 
-	http.default_resource["GET"] = std::bind(&SimpleWebSocketServer::httpDefaultCallback, this, std::placeholders::_1, std::placeholders::_2);
-	http.on_upgrade = std::bind(&SimpleWebSocketServer::onHTTPUpgrade, this, std::placeholders::_1, std::placeholders::_2);
+	http.reset(new HttpServer());
+	http->config.port = port;
+	http->io_service = ioService;
+
+	http->default_resource["GET"] = std::bind(&SimpleWebSocketServer::httpDefaultCallback, this, std::placeholders::_1, std::placeholders::_2);
+	http->on_upgrade = std::bind(&SimpleWebSocketServer::onHTTPUpgrade, this, std::placeholders::_1, std::placeholders::_2);
 
 	//WebSocket init
-	auto& wsEndpoint = ws.endpoint[("^" + wsSuffix + "/?$").toStdString()];
+	ws.reset(new WsServer());
+	auto& wsEndpoint = ws->endpoint[("^" + wsSuffix + "/?$").toStdString()];
 
 	wsEndpoint.on_message = std::bind(&SimpleWebSocketServer::onMessageCallback, this, std::placeholders::_1, std::placeholders::_2);
 	wsEndpoint.on_error = std::bind(&SimpleWebSocketServer::onErrorCallback, this, std::placeholders::_1, std::placeholders::_2);
 	wsEndpoint.on_open = std::bind(&SimpleWebSocketServer::onNewConnectionCallback, this, std::placeholders::_1);
 	wsEndpoint.on_close = std::bind(&SimpleWebSocketServer::onConnectionCloseCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 
-	http.config.timeout_request = 1;
-	http.config.timeout_content = 2;
-	http.config.max_request_streambuf_size = 1000000;
-	http.config.thread_pool_size = 2;
-	http.start(std::bind(&SimpleWebSocketServer::httpStartCallback, this, std::placeholders::_1));
+	http->config.timeout_request = 1;
+	http->config.timeout_content = 2;
+	http->config.max_request_streambuf_size = 1000000;
+	http->config.thread_pool_size = 2;
+	http->start(std::bind(&SimpleWebSocketServer::httpStartCallback, this, std::placeholders::_1));
 	if (ioService != nullptr) ioService->run();
 }
 
@@ -240,12 +248,14 @@ void SimpleWebSocketServer::httpStartCallback(unsigned short _port)
 
 void SimpleWebSocketServer::onHTTPUpgrade(std::unique_ptr<SimpleWeb::HTTP>& socket, std::shared_ptr<HttpServer::Request> request)
 {
+	jassert(ws != nullptr);
+
 	auto connection = std::make_shared<WsServer::Connection>(std::move(socket));
 	connection->method = std::move(request->method);
 	connection->path = std::move(request->path);
 	connection->http_version = std::move(request->http_version);
 	connection->header = std::move(request->header);
-	ws.upgrade(connection);
+	ws->upgrade(connection);
 }
 
 void SimpleWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request)
@@ -314,18 +324,15 @@ void SimpleWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpServer::Resp
 #if JUCE_WINDOWS
 
 SecureWebSocketServer::SecureWebSocketServer(const String& certFile, const String& privateKeyFile, const String& verifyFile) :
-	ws(certFile.toStdString(), privateKeyFile.toStdString(), verifyFile.toStdString()),
-	http(certFile.toStdString(), privateKeyFile.toStdString(), verifyFile.toStdString())
+	certFile(certFile),
+	keyFile(privateKeyFile),
+	verifyFile(verifyFile)
 {
-	ws.config.timeout_idle = 1;
-	ws.config.timeout_request = 2;
 }
 
 SecureWebSocketServer::~SecureWebSocketServer()
 {
-	if (ioService != nullptr) ioService->stop();
-	if (isConnected) ws.stop();
-	stopThread(1000);
+	stop();
 }
 
 void SecureWebSocketServer::send(const String& message)
@@ -390,17 +397,20 @@ void SecureWebSocketServer::sendExclude(const MemoryBlock& data, const StringArr
 
 void SecureWebSocketServer::stopInternal()
 {
-	std::unordered_set<std::shared_ptr<WssServer::Connection>> connections = ws.get_connections();
-	for (auto& c : connections) c->send_close(1000, "Server destroyed");
-	connectionMap.clear();
+	if (ws != nullptr)
+	{
+		std::unordered_set<std::shared_ptr<WssServer::Connection>> connections = ws->get_connections();
+		for (auto& c : connections) c->send_close(1000, "Server destroyed");
+		connectionMap.clear();
 
-#if !JUCE_DEBUG
-	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(100);
-#endif
+		ws->stop();
+	}
 
-	ws.stop();
 	if (ioService != nullptr) ioService->stop();
-	http.stop();
+	if (http != nullptr) http->stop();
+
+	ws.reset();
+	http.reset();
 	ioService.reset();
 }
 
@@ -412,26 +422,34 @@ void SecureWebSocketServer::closeConnectionInternal(const String& id, int code, 
 
 void SecureWebSocketServer::initServer()
 {
-	ioService = std::make_shared<asio::io_service>();
-	http.config.port = port;
-	http.io_service = ioService;
 
-	http.default_resource["GET"] = std::bind(&SecureWebSocketServer::httpDefaultCallback, this, std::placeholders::_1, std::placeholders::_2);
-	http.on_upgrade = std::bind(&SecureWebSocketServer::onHTTPUpgrade, this, std::placeholders::_1, std::placeholders::_2);
+
+	ioService = std::make_shared<asio::io_service>();
+	
+	http.reset(new HttpsServer(certFile.toStdString(), keyFile.toStdString(), verifyFile.toStdString()));
+	http->config.port = port;
+	http->io_service = ioService;
+
+	http->default_resource["GET"] = std::bind(&SecureWebSocketServer::httpDefaultCallback, this, std::placeholders::_1, std::placeholders::_2);
+	http->on_upgrade = std::bind(&SecureWebSocketServer::onHTTPUpgrade, this, std::placeholders::_1, std::placeholders::_2);
 
 	//WebSocket init
-	auto& wsEndpoint = ws.endpoint[("^" + wsSuffix + "/?$").toStdString()];
+	ws.reset(new WssServer(certFile.toStdString(), keyFile.toStdString(), verifyFile.toStdString()));
+	ws->config.timeout_idle = 1;
+	ws->config.timeout_request = 2;
+
+	auto& wsEndpoint = ws->endpoint[("^" + wsSuffix + "/?$").toStdString()];
 
 	wsEndpoint.on_message = std::bind(&SecureWebSocketServer::onMessageCallback, this, std::placeholders::_1, std::placeholders::_2);
 	wsEndpoint.on_error = std::bind(&SecureWebSocketServer::onErrorCallback, this, std::placeholders::_1, std::placeholders::_2);
 	wsEndpoint.on_open = std::bind(&SecureWebSocketServer::onNewConnectionCallback, this, std::placeholders::_1);
 	wsEndpoint.on_close = std::bind(&SecureWebSocketServer::onConnectionCloseCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 
-	http.config.timeout_request = 1;
-	http.config.timeout_content = 2;
-	http.config.max_request_streambuf_size = 1000000;
-	http.config.thread_pool_size = 2;
-	http.start(std::bind(&SecureWebSocketServer::httpStartCallback, this, std::placeholders::_1));
+	http->config.timeout_request = 1;
+	http->config.timeout_content = 2;
+	http->config.max_request_streambuf_size = 1000000;
+	http->config.thread_pool_size = 2;
+	http->start(std::bind(&SecureWebSocketServer::httpStartCallback, this, std::placeholders::_1));
 	if (ioService != nullptr) ioService->run();
 }
 
@@ -486,12 +504,14 @@ void SecureWebSocketServer::httpStartCallback(unsigned short _port)
 
 void SecureWebSocketServer::onHTTPUpgrade(std::unique_ptr<SimpleWeb::HTTPS>& socket, std::shared_ptr<HttpsServer::Request> request)
 {
+	jassert(ws != nullptr);
+
 	auto connection = std::make_shared<WssServer::Connection>(std::move(socket));
 	connection->method = std::move(request->method);
 	connection->path = std::move(request->path);
 	connection->http_version = std::move(request->http_version);
 	connection->header = std::move(request->header);
-	ws.upgrade(connection);
+	ws->upgrade(connection);
 }
 
 void SecureWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpsServer::Response> response, std::shared_ptr<HttpsServer::Request> request)

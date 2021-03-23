@@ -98,8 +98,8 @@ public:
 	SimpleWebSocketServer();
 	~SimpleWebSocketServer();
 
-	WsServer ws;
-	HttpServer http;
+	std::unique_ptr<WsServer> ws;
+	std::unique_ptr<HttpServer> http;
 
 	std::shared_ptr<asio::io_service> ioService;
 	HashMap<String, std::shared_ptr<WsServer::Connection>> connectionMap;
@@ -141,8 +141,12 @@ public:
 	SecureWebSocketServer(const String & certFile, const String & privateKeyFile, const String & verifyFile = String());
 	~SecureWebSocketServer();
 
-	WssServer ws;
-	HttpsServer http;
+	String certFile;
+	String keyFile;
+	String verifyFile;
+
+	std::unique_ptr<WssServer> ws;
+	std::unique_ptr<HttpsServer> http;
 
 	std::shared_ptr<asio::io_service> ioService;
 	HashMap<String, std::shared_ptr<WssServer::Connection>> connectionMap;
