@@ -414,8 +414,6 @@ namespace SimpleWeb {
 
       auto nonce_base64 = std::make_shared<std::string>(WSCrypto::base64_encode((const unsigned char *)nonce.c_str(), nonce.size()));
 
-      std::string test = Crypto::Base64::encode(nonce);
-
       ostream << "Sec-WebSocket-Key: " << *nonce_base64 << "\r\n";
       ostream << "Sec-WebSocket-Version: 13\r\n";
       for(auto &header_field : config.header)
