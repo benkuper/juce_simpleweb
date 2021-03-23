@@ -15,9 +15,12 @@
 #define ASIO_DISABLE_SERIAL_PORT 1
 
 using WsServer = SimpleWeb::SocketServer<SimpleWeb::WS>;
-using WssServer = SimpleWeb::SocketServer<SimpleWeb::WSS>;
 using HttpServer = SimpleWeb::Server<SimpleWeb::HTTP>;
+
+#if JUCE_WINDOWS
+using WssServer = SimpleWeb::SocketServer<SimpleWeb::WSS>;
 using HttpsServer = SimpleWeb::Server<SimpleWeb::HTTPS>;
+#endif
 
 class SimpleWebSocketServerBase :
 	public juce::Thread
@@ -77,7 +80,10 @@ public:
 	public:
 		virtual ~RequestHandler() {}
 		virtual bool handleHTTPRequest(std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request) { return false; };
+
+#if JUCE_WINDOWS
 		virtual bool handleHTTPSRequest(std::shared_ptr<HttpsServer::Response> response, std::shared_ptr<HttpsServer::Request> request) { return false; };
+#endif
 	};
 
 	RequestHandler* handler;
@@ -124,6 +130,10 @@ public:
 	virtual int getNumActiveConnections() const;
 };
 
+
+#if JUCE_WINDOWS
+
+
 class SecureWebSocketServer :
 	public SimpleWebSocketServerBase
 {
@@ -164,3 +174,4 @@ public:
 	virtual int getNumActiveConnections() const;
 };
 
+#endif

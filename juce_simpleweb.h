@@ -49,18 +49,26 @@
 #include <juce_core/juce_core.h>
 #include <juce_cryptography/juce_cryptography.h>
 
+#if JUCE_WINDOWS
 #define _WIN32_WINDOWS 0x601
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
-
 #include "common/crypto.hpp"
+#endif
 
 #include <juce_events/juce_events.h>
 
 using namespace juce;
 
+#if JUCE_WINDOWS
+#include "openssl/ssl.h"
 #include "websocket/server_wss.hpp"
 #include "webserver/server_https.hpp"
 #include "websocket/client_wss.hpp"
+#else
+#include "websocket/server_ws.hpp"
+#include "webserver/server_http.hpp"
+#include "websocket/client_ws.hpp"
+#endif
 
 #include "SimpleWebSocketServer.h"
 #include "SimpleWebSocketClient.h"

@@ -15,7 +15,6 @@
 #define ASIO_DISABLE_SERIAL_PORT 1
 
 using WsClient = SimpleWeb::SocketClient<SimpleWeb::WS>;
-using WssClient = SimpleWeb::SocketClient<SimpleWeb::WSS>;
 
 class SimpleWebSocketClientBase :
 	public Thread
@@ -79,7 +78,7 @@ public:
 	void send(const String& message) override;
 	void send(const char* data, int numData) override;
 	void stopInternal() override;
-	
+
 	void initWS() override;
 
 	void onMessageCallback(std::shared_ptr<WsClient::Connection> connection, std::shared_ptr<WsClient::InMessage> in_message);
@@ -87,6 +86,9 @@ public:
 	void onConnectionCloseCallback(std::shared_ptr<WsClient::Connection> /*_connection*/, int status, const std::string& reason);
 	void onErrorCallback(std::shared_ptr<WsClient::Connection> /*_connection*/, const SimpleWeb::error_code& ec);
 };
+
+#if JUCE_WINDOWS
+using WssClient = SimpleWeb::SocketClient<SimpleWeb::WSS>;
 
 class SecureWebSocketClient :
 	public SimpleWebSocketClientBase
@@ -110,3 +112,4 @@ public:
 	void onConnectionCloseCallback(std::shared_ptr<WssClient::Connection> /*_connection*/, int status, const std::string& reason);
 	void onErrorCallback(std::shared_ptr<WssClient::Connection> /*_connection*/, const SimpleWeb::error_code& ec);
 };
+#endif

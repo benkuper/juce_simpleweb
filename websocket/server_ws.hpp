@@ -2,7 +2,7 @@
 #define SIMPLE_WEB_SERVER_WS_HPP
 
 #include "../common/asio_compatibility.hpp"
-#include "../common/crypto.hpp"
+//#include "../common/crypto.hpp"
 #include "../common/mutex.hpp"
 #include "../common/utility.hpp"
 #include <array>
