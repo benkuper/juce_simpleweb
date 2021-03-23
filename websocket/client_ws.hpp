@@ -460,7 +460,6 @@ namespace SimpleWeb {
               static auto ws_magic_string = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
               std::string b64 = WSCrypto::base64_decode(header_it->second);
-              std::string test2 = Crypto::Base64::decode(header_it->second);
 
               std::string inSha = *nonce_base64 + ws_magic_string;
               unsigned char hash[20];
