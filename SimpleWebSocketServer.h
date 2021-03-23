@@ -127,7 +127,7 @@ public:
 	void httpDefaultCallback(std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request);
 	String getConnectionString(std::shared_ptr<WsServer::Connection> connection) const;
 
-	virtual int getNumActiveConnections() const;
+	virtual int getNumActiveConnections() const override;
 };
 
 
@@ -175,7 +175,7 @@ public:
 	void httpDefaultCallback(std::shared_ptr<HttpsServer::Response> response, std::shared_ptr<HttpsServer::Request> request);
 	String getConnectionString(std::shared_ptr<WssServer::Connection> connection) const;
 
-	virtual int getNumActiveConnections() const;
+	virtual int getNumActiveConnections() const override;
 };
 
 #endif
