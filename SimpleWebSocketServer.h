@@ -17,7 +17,7 @@
 using WsServer = SimpleWeb::SocketServer<SimpleWeb::WS>;
 using HttpServer = SimpleWeb::Server<SimpleWeb::HTTP>;
 
-#if WEBSOCKET_SECURE_SUPPORTED
+#if SIMPLEWEB_SECURE_SUPPORTED
 using WssServer = SimpleWeb::SocketServer<SimpleWeb::WSS>;
 using HttpsServer = SimpleWeb::Server<SimpleWeb::HTTPS>;
 #endif
@@ -81,7 +81,7 @@ public:
 		virtual ~RequestHandler() {}
 		virtual bool handleHTTPRequest(std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request) { return false; };
 
-#if WEBSOCKET_SECURE_SUPPORTED
+#if SIMPLEWEB_SECURE_SUPPORTED
 		virtual bool handleHTTPSRequest(std::shared_ptr<HttpsServer::Response> response, std::shared_ptr<HttpsServer::Request> request) { return false; };
 #endif
 	};
@@ -131,7 +131,7 @@ public:
 };
 
 
-#if WEBSOCKET_SECURE_SUPPORTED
+#if SIMPLEWEB_SECURE_SUPPORTED
 
 class SecureWebSocketServer :
 	public SimpleWebSocketServerBase

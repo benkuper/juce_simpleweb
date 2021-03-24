@@ -146,7 +146,7 @@ void SimpleWebSocketClient::onErrorCallback(std::shared_ptr<WsClient::Connection
 
 //SECURE
 
-#if WEBSOCKET_SECURE_SUPPORTED
+#if SIMPLEWEB_SECURE_SUPPORTED
 SecureWebSocketClient::SecureWebSocketClient() :
 	ws(nullptr)
 {

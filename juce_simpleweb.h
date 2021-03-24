@@ -55,7 +55,7 @@
 #define SIMPLEWEB_SECURE_SUPPORTED 0
 #endif
 
-#if WEBSOCKET_SECURE_SUPPORTED
+#if SIMPLEWEB_SECURE_SUPPORTED
 #define _WIN32_WINDOWS 0x601
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include "common/crypto.hpp"
@@ -67,7 +67,7 @@
 
 using namespace juce;
 
-#if WEBSOCKET_SECURE_SUPPORTED
+#if SIMPLEWEB_SECURE_SUPPORTED
 #include "openssl/ssl.h"
 #include "websocket/server_wss.hpp"
 #include "webserver/server_https.hpp"
