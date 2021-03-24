@@ -321,7 +321,7 @@ void SimpleWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpServer::Resp
 
 //SECURE
 
-#if JUCE_WINDOWS || JUCE_MAC
+#if WEBSOCKET_SECURE_SUPPORTED
 
 SecureWebSocketServer::SecureWebSocketServer(const String& certFile, const String& privateKeyFile, const String& verifyFile) :
 	certFile(certFile),

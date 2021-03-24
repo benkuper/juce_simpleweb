@@ -22,9 +22,9 @@
   website:          https://github.com/benkuper/juce_simpleweb
   license:          GPLv3
 
-  linuxLibs:        
+  linuxLibs:        ssl,crypto
   OSXLibs:          libssl,libcrypto
-  windowsLibs:      openssl,libssl,libcrypto
+  windowsLibs:      libssl,libcrypto
   
  END_JUCE_MODULE_DECLARATION
 
@@ -49,7 +49,13 @@
 #include <juce_core/juce_core.h>
 #include <juce_cryptography/juce_cryptography.h>
 
-#if JUCE_WINDOWS || JUCE_MAC
+#ifndef __arm__
+#define SIMPLEWEB_SECURE_SUPPORTED 1
+#else
+#define SIMPLEWEB_SECURE_SUPPORTED 0
+#endif
+
+#if WEBSOCKET_SECURE_SUPPORTED
 #define _WIN32_WINDOWS 0x601
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include "common/crypto.hpp"
@@ -61,7 +67,7 @@
 
 using namespace juce;
 
-#if JUCE_WINDOWS || JUCE_MAC
+#if WEBSOCKET_SECURE_SUPPORTED
 #include "openssl/ssl.h"
 #include "websocket/server_wss.hpp"
 #include "webserver/server_https.hpp"
