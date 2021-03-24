@@ -625,7 +625,7 @@ namespace SimpleWeb {
           }
           std::istream istream(&connection->streambuf);
 
-          std::array<unsigned char, 2> first_bytes;
+          std::array<unsigned char, 2> first_bytes{};
           istream.read((char *)&first_bytes[0], 2);
 
           unsigned char fin_rsv_opcode = first_bytes[0];
@@ -651,7 +651,7 @@ namespace SimpleWeb {
               if(!ec) {
                 std::istream istream(&connection->streambuf);
 
-                std::array<unsigned char, 2> length_bytes;
+                std::array<unsigned char, 2> length_bytes{};
                 istream.read((char *)&length_bytes[0], 2);
 
                 std::size_t length = 0;
@@ -676,7 +676,7 @@ namespace SimpleWeb {
               if(!ec) {
                 std::istream istream(&connection->streambuf);
 
-                std::array<unsigned char, 8> length_bytes;
+                std::array<unsigned char, 8> length_bytes{};
                 istream.read((char *)&length_bytes[0], 8);
 
                 std::size_t length = 0;
@@ -717,7 +717,7 @@ namespace SimpleWeb {
           std::istream istream(&connection->streambuf);
 
           // Read mask
-          std::array<unsigned char, 4> mask;
+          std::array<unsigned char, 4> mask = {};
           istream.read((char *)&mask[0], 4);
 
           std::shared_ptr<InMessage> in_message;
