@@ -87,7 +87,7 @@ public:
 	void onErrorCallback(std::shared_ptr<WsClient::Connection> /*_connection*/, const SimpleWeb::error_code& ec);
 };
 
-#if WEBSOCKET_SECURE_SUPPORTED
+#if SIMPLEWEB_SECURE_SUPPORTED
 using WssClient = SimpleWeb::SocketClient<SimpleWeb::WSS>;
 
 class SecureWebSocketClient :
