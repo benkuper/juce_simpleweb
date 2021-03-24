@@ -17,7 +17,7 @@
 using WsServer = SimpleWeb::SocketServer<SimpleWeb::WS>;
 using HttpServer = SimpleWeb::Server<SimpleWeb::HTTP>;
 
-#if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_MAC
 using WssServer = SimpleWeb::SocketServer<SimpleWeb::WSS>;
 using HttpsServer = SimpleWeb::Server<SimpleWeb::HTTPS>;
 #endif
@@ -81,7 +81,7 @@ public:
 		virtual ~RequestHandler() {}
 		virtual bool handleHTTPRequest(std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request) { return false; };
 
-#if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_MAC
 		virtual bool handleHTTPSRequest(std::shared_ptr<HttpsServer::Response> response, std::shared_ptr<HttpsServer::Request> request) { return false; };
 #endif
 	};
@@ -131,8 +131,7 @@ public:
 };
 
 
-#if JUCE_WINDOWS
-
+#if JUCE_WINDOWS || JUCE_MAC
 
 class SecureWebSocketServer :
 	public SimpleWebSocketServerBase

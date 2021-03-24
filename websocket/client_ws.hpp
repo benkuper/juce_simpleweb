@@ -412,7 +412,7 @@ namespace SimpleWeb {
       for(std::size_t c = 0; c < 16; c++)
         nonce += static_cast<char>(dist(rd));
 
-      auto nonce_base64 = std::make_shared<std::string>(WSCrypto::base64_encode((const unsigned char *)nonce.c_str(), nonce.size()));
+      auto nonce_base64 = std::make_shared<std::string>(WSCrypto::base64_encode((const unsigned char *)nonce.c_str(), (int)nonce.size()));
 
       ostream << "Sec-WebSocket-Key: " << *nonce_base64 << "\r\n";
       ostream << "Sec-WebSocket-Version: 13\r\n";

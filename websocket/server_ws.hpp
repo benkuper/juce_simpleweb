@@ -561,12 +561,12 @@ namespace SimpleWeb {
             
             std::string inSha = key_it->second + ws_magic_string;
             unsigned char hash[20];
-            WSCrypto::calcSha1(inSha.c_str(), inSha.size(), hash);
+            WSCrypto::calcSha1(inSha.c_str(), (int)inSha.size(), hash);
 
             std::string hexString((const char*)hash);
             hexString.resize(20);
 
-            std::string b64 = WSCrypto::base64_encode((const unsigned char *)hexString.c_str(), hexString.size());
+            std::string b64 = WSCrypto::base64_encode((const unsigned char *)hexString.c_str(), (int)hexString.size());
 
             response_header.emplace("Sec-WebSocket-Accept", b64);
 

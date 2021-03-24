@@ -146,7 +146,7 @@ void SimpleWebSocketClient::onErrorCallback(std::shared_ptr<WsClient::Connection
 
 //SECURE
 
-#if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_MAC
 SecureWebSocketClient::SecureWebSocketClient() :
 	ws(nullptr)
 {

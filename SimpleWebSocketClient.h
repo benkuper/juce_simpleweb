@@ -87,7 +87,7 @@ public:
 	void onErrorCallback(std::shared_ptr<WsClient::Connection> /*_connection*/, const SimpleWeb::error_code& ec);
 };
 
-#if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_MAC
 using WssClient = SimpleWeb::SocketClient<SimpleWeb::WSS>;
 
 class SecureWebSocketClient :
