@@ -42,15 +42,15 @@ void SimpleWebSocketServerBase::send(const MemoryBlock& data)
 void SimpleWebSocketServerBase::stop()
 {
 
-#if !JUCE_DEBUG
-	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(500);
-#endif
+//#if !JUCE_DEBUG
+//	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(500);
+//#endif
 
 	stopInternal();
 
-#if JUCE_DEBUG //don't know why the order is not the same for debug and release...
-	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(500);
-#endif
+//#if JUCE_DEBUG //don't know why the order is not the same for debug and release...
+//	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(500);
+//#endif
 
 }
 
@@ -143,6 +143,10 @@ void SimpleWebSocketServer::sendExclude(const MemoryBlock& data, const StringArr
 
 void SimpleWebSocketServer::stopInternal()
 {
+
+	if (ioService != nullptr) ioService->stop();
+	ScopedLock lock(serverLock);
+	
 	if (ws != nullptr)
 	{
 		std::unordered_set<std::shared_ptr<WsServer::Connection>> connections = ws->get_connections();
@@ -151,15 +155,14 @@ void SimpleWebSocketServer::stopInternal()
 
 		ws->stop();
 	}
+
 	
-	if (ioService != nullptr) ioService->stop();
+
 	if(http != nullptr) http->stop();
 
 	ws.reset();
 	http.reset();
 	ioService.reset();
-
-	stopThread(1000);
 }
 
 void SimpleWebSocketServer::closeConnectionInternal(const String& id, int code, const String& reason)
@@ -170,6 +173,8 @@ void SimpleWebSocketServer::closeConnectionInternal(const String& id, int code, 
 
 void SimpleWebSocketServer::initServer()
 {
+	ScopedLock lock(serverLock);
+
 	ioService = std::make_shared<asio::io_service>();
 
 	http.reset(new HttpServer());
@@ -188,11 +193,14 @@ void SimpleWebSocketServer::initServer()
 	wsEndpoint.on_open = std::bind(&SimpleWebSocketServer::onNewConnectionCallback, this, std::placeholders::_1);
 	wsEndpoint.on_close = std::bind(&SimpleWebSocketServer::onConnectionCloseCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 
+
 	http->config.timeout_request = 1;
 	http->config.timeout_content = 2;
 	http->config.max_request_streambuf_size = 1000000;
 	http->config.thread_pool_size = 2;
 	http->start(std::bind(&SimpleWebSocketServer::httpStartCallback, this, std::placeholders::_1));
+	
+
 	if (ioService != nullptr) ioService->run();
 }
 
@@ -397,6 +405,10 @@ void SecureWebSocketServer::sendExclude(const MemoryBlock& data, const StringArr
 
 void SecureWebSocketServer::stopInternal()
 {
+	if (ioService != nullptr) ioService->stop();
+	
+	ScopedLock lock(serverLock);
+	
 	if (ws != nullptr)
 	{
 		std::unordered_set<std::shared_ptr<WssServer::Connection>> connections = ws->get_connections();
@@ -406,7 +418,6 @@ void SecureWebSocketServer::stopInternal()
 		ws->stop();
 	}
 
-	if (ioService != nullptr) ioService->stop();
 	if (http != nullptr) http->stop();
 
 	ws.reset();
