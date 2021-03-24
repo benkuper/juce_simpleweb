@@ -34,6 +34,8 @@ public:
 	String wsSuffix;
 	bool isConnected;
 
+	CriticalSection serverLock;
+
 	void start(int port = 8080, const String& wsSuffix = "");
 
 	virtual void send(const String& message) {}
