@@ -23,7 +23,7 @@
   license:          GPLv3
 
   linuxLibs:        
-  OSXLibs:          
+  OSXLibs:          libssl,libcrypto
   windowsLibs:      openssl,libssl,libcrypto
   
  END_JUCE_MODULE_DECLARATION
@@ -49,7 +49,7 @@
 #include <juce_core/juce_core.h>
 #include <juce_cryptography/juce_cryptography.h>
 
-#if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_MAC
 #define _WIN32_WINDOWS 0x601
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include "common/crypto.hpp"
@@ -61,7 +61,7 @@
 
 using namespace juce;
 
-#if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_MAC
 #include "openssl/ssl.h"
 #include "websocket/server_wss.hpp"
 #include "webserver/server_https.hpp"
