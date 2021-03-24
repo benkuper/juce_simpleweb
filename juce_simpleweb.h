@@ -49,11 +49,11 @@
 #include <juce_core/juce_core.h>
 #include <juce_cryptography/juce_cryptography.h>
 
-#ifndef __arm__
+//#ifndef __arm__
 #define SIMPLEWEB_SECURE_SUPPORTED 1
-#else
-#define SIMPLEWEB_SECURE_SUPPORTED 0
-#endif
+//#else
+//#define SIMPLEWEB_SECURE_SUPPORTED 0
+//#endif
 
 #if SIMPLEWEB_SECURE_SUPPORTED
 #define _WIN32_WINDOWS 0x601
