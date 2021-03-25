@@ -42,7 +42,6 @@ public:
 	virtual void initWS() {}
 
 
-	void handleMessageCallback(const String& s, int opCode);
 	void handleNewConnectionCallback();
 	void handleConnectionClosedCallback(int status, const String &reason);
 	void handleErrorCallback(const String& message);

@@ -226,7 +226,11 @@ void SimpleWebSocketServer::onMessageCallback(std::shared_ptr<WsServer::Connecti
 {
 	String id = getConnectionString(connection);
 	if (in_message->fin_rsv_opcode == 129) webSocketListeners.call(&Listener::messageReceived, id, String(in_message->string()));
-	else if (in_message->fin_rsv_opcode == 130) webSocketListeners.call(&Listener::dataReceived, id, in_message->binary);
+	else if (in_message->fin_rsv_opcode == 130)
+	{
+		MemoryBlock b(in_message->string().c_str(), in_message->size());
+		webSocketListeners.call(&Listener::dataReceived, id, b);
+	}
 	else if (in_message->fin_rsv_opcode == 136)
 	{
 		DBG("Connection ended for " << id);
