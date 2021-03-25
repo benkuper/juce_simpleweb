@@ -1,3 +1,4 @@
+#include "SimpleWebSocketClient.h"
 SimpleWebSocketClientBase::SimpleWebSocketClientBase() :
 	Thread("Web socket client"),
 	isConnected(false),
@@ -40,19 +41,6 @@ void SimpleWebSocketClientBase::run()
 
 	//end thread
 	this->isConnected = false;
-}
-
-void SimpleWebSocketClientBase::handleMessageCallback(const String& s, int opCode)
-{
-	if (opCode == 130) //binary
-	{
-		MemoryBlock b(s.getCharPointer(), s.length());
-		this->webSocketListeners.call(&Listener::dataReceived, b);
-	}
-	else //text
-	{
-		this->webSocketListeners.call(&Listener::messageReceived, s);
-	}
 }
 
 void SimpleWebSocketClientBase::handleNewConnectionCallback()
@@ -123,8 +111,16 @@ void SimpleWebSocketClient::initWS()
 
 void SimpleWebSocketClient::onMessageCallback(std::shared_ptr<WsClient::Connection> connection, std::shared_ptr<WsClient::InMessage> in_message)
 {
-	std::string s = in_message->string();
-	handleMessageCallback(s, in_message->fin_rsv_opcode);
+	if (in_message->fin_rsv_opcode == 129) webSocketListeners.call(&Listener::messageReceived, String(in_message->string()));
+	else if (in_message->fin_rsv_opcode == 130)
+	{
+		MemoryBlock b(in_message->string().c_str(), in_message->size());
+		webSocketListeners.call(&Listener::dataReceived, b);
+	}
+	else if (in_message->fin_rsv_opcode == 136)
+	{
+		DBG("Connection ended");
+	}
 }
 
 void SimpleWebSocketClient::onNewConnectionCallback(std::shared_ptr<WsClient::Connection> _connection)
@@ -194,8 +190,9 @@ void SecureWebSocketClient::initWS()
 
 void SecureWebSocketClient::onMessageCallback(std::shared_ptr<WssClient::Connection> connection, std::shared_ptr<WssClient::InMessage> in_message)
 {
-	std::string s = in_message->string();
-	handleMessageCallback(s, in_message->fin_rsv_opcode);
+	if (in_message->fin_rsv_opcode == 129) webSocketListeners.call(&Listener::messageReceived, String(in_message->string()));
+	else if (in_message->fin_rsv_opcode == 130) webSocketListeners.call(&Listener::dataReceived, in_message->binary);
+	else if (in_message->fin_rsv_opcode == 136) DBG("Connection ended");
 }
 
 void SecureWebSocketClient::onNewConnectionCallback(std::shared_ptr<WssClient::Connection> _connection)
