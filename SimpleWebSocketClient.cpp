@@ -72,7 +72,7 @@ SimpleWebSocketClient::SimpleWebSocketClient() :
 
 SimpleWebSocketClient::~SimpleWebSocketClient()
 {
-
+	stop();
 }
 
 void SimpleWebSocketClient::send(const String& message)
