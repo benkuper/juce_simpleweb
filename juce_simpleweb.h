@@ -22,7 +22,7 @@
   website:          https://github.com/benkuper/juce_simpleweb
   license:          GPLv3
 
-  linuxLibs:        ssl,crypto
+  linuxLibs:        ssl,crypto,pthread
   OSXLibs:          libssl,libcrypto
   windowsLibs:      libssl,libcrypto
   
