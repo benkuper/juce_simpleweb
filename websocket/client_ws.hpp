@@ -463,7 +463,7 @@ namespace SimpleWeb {
 
 							std::string inSha = *nonce_base64 + ws_magic_string;
 							unsigned char hash[20];
-							WSCrypto::calcSha1(inSha.c_str(), inSha.size(), hash);
+							WSCrypto::calcSha1(inSha.c_str(), (int)inSha.size(), hash);
 
 							std::string hexString((const char*)hash);
 							hexString.resize(20);
