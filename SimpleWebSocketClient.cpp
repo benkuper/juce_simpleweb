@@ -192,7 +192,10 @@ void SecureWebSocketClient::onMessageCallback(std::shared_ptr<WssClient::Connect
 {
 	if (in_message->fin_rsv_opcode == 129) webSocketListeners.call(&Listener::messageReceived, String(in_message->string()));
 	else if (in_message->fin_rsv_opcode == 130) webSocketListeners.call(&Listener::dataReceived, in_message->binary);
-	else if (in_message->fin_rsv_opcode == 136) DBG("Connection ended");
+	else if (in_message->fin_rsv_opcode == 136)
+	{
+		DBG("Connection ended");
+	}
 }
 
 void SecureWebSocketClient::onNewConnectionCallback(std::shared_ptr<WssClient::Connection> _connection)
