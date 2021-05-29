@@ -80,3 +80,4 @@ using namespace juce;
 
 #include "SimpleWebSocketServer.h"
 #include "SimpleWebSocketClient.h"
+#include "MIMETypes.h"

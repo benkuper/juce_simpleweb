@@ -1,3 +1,4 @@
+#include "SimpleWebSocketServer.h"
 
 /*
   ==============================================================================
@@ -8,9 +9,6 @@
 
   ==============================================================================
 */
-
-#include "MIMETypes.h"
-#include "SimpleWebSocketServer.h"
 
 SimpleWebSocketServerBase::SimpleWebSocketServerBase() :
 Thread("Web socket"),
@@ -220,6 +218,61 @@ String SimpleWebSocketServer::getConnectionString(std::shared_ptr<WsServer::Conn
 	return String(connection->remote_endpoint().address().to_string()) + ":" + String(connection->remote_endpoint().port());
 }
 
+void SimpleWebSocketServerBase::serveFile(const File& file, std::shared_ptr<HttpServer::Response> response)
+{
+	String contentType = MIMETypes::getMIMEType(file.getFileExtension());
+
+	bool fileIsText = contentType.contains("text") || contentType.contains("json") || contentType.contains("script") || contentType.contains("css");
+
+	SimpleWeb::CaseInsensitiveMultimap header;
+	header.emplace("Content-Length", String(file.getSize()).toStdString());
+	header.emplace("Content-Type", contentType.toStdString());
+	header.emplace("Accept-range", "bytes");
+	header.emplace("Access-Control-Allow-Origin", "*");
+
+	response->write(SimpleWeb::StatusCode::success_ok, header);
+
+	if (fileIsText)
+	{
+		*response << file.loadFileAsString().toStdString();
+	}
+	else
+	{
+		MemoryBlock b;
+		std::unique_ptr<FileInputStream> fs = file.createInputStream();
+		fs->readIntoMemoryBlock(b);
+		response->write((const char*)b.getData(), b.getSize());
+	}
+
+}
+
+void SimpleWebSocketServerBase::serveFile(const File& file, std::shared_ptr<HttpsServer::Response> response)
+{
+	String contentType = MIMETypes::getMIMEType(file.getFileExtension());
+
+	bool fileIsText = contentType.contains("text") || contentType.contains("json") || contentType.contains("script") || contentType.contains("css");
+
+	SimpleWeb::CaseInsensitiveMultimap header;
+	header.emplace("Content-Length", String(file.getSize()).toStdString());
+	header.emplace("Content-Type", contentType.toStdString());
+	header.emplace("Accept-range", "bytes");
+	header.emplace("Access-Control-Allow-Origin", "*");
+
+	response->write(SimpleWeb::StatusCode::success_ok, header);
+
+	if (fileIsText)
+	{
+		*response << file.loadFileAsString().toStdString();
+	}
+	else
+	{
+		MemoryBlock b;
+		std::unique_ptr<FileInputStream> fs = file.createInputStream();
+		fs->readIntoMemoryBlock(b);
+		response->write((const char*)b.getData(), b.getSize());
+	}
+
+}
 
 
 void SimpleWebSocketServer::onMessageCallback(std::shared_ptr<WsServer::Connection> connection, std::shared_ptr<WsServer::InMessage> in_message)
@@ -298,30 +351,7 @@ void SimpleWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpServer::Resp
 
 		if (f.existsAsFile())
 		{
-			contentType = MIMETypes::getMIMEType(f.getFileExtension());
-
-			bool fileIsText = contentType.contains("text") || contentType.contains("json") || contentType.contains("script") || contentType.contains("css");
-
-			SimpleWeb::CaseInsensitiveMultimap header;
-			header.emplace("Content-Length", String(f.getSize()).toStdString());
-			header.emplace("Content-Type", contentType.toStdString());
-			header.emplace("Accept-range", "bytes");
-			header.emplace("Access-Control-Allow-Origin", "*");
-
-			response->write(SimpleWeb::StatusCode::success_ok, header);
-
-			if (fileIsText)
-			{
-				*response << f.loadFileAsString().toStdString();
-			}
-			else
-			{
-				MemoryBlock b;
-				std::unique_ptr<FileInputStream> fs = f.createInputStream();
-				fs->readIntoMemoryBlock(b);
-				response->write((const char*)b.getData(), b.getSize());
-			}
-
+			serveFile(f, response);
 			return;
 		}
 		else
@@ -492,7 +522,6 @@ String SecureWebSocketServer::getConnectionString(std::shared_ptr<WssServer::Con
 	return String(connection->remote_endpoint().address().to_string()) + ":" + String(connection->remote_endpoint().port());
 }
 
-
 void SecureWebSocketServer::onMessageCallback(std::shared_ptr<WssServer::Connection> connection, std::shared_ptr<WssServer::InMessage> in_message)
 {
 	String id = getConnectionString(connection);
@@ -553,41 +582,15 @@ void SecureWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpsServer::Res
 	if (rootPath.exists() && rootPath.isDirectory())
 	{
 		//String content = "";
-		String contentType = "text/html";
 		File f;
-
 		String path = request->path.substr(1);
 		if (path.isEmpty()) path = "index.html";
 		f = rootPath.getChildFile(path); //substr to remove the first "/"
-
 		if (f.exists() && f.isDirectory()) f = f.getChildFile("index.html");
 
 		if (f.existsAsFile())
 		{
-			contentType = MIMETypes::getMIMEType(f.getFileExtension());
-
-			bool fileIsText = contentType.contains("text") || contentType.contains("json") || contentType.contains("script") || contentType.contains("css");
-
-			SimpleWeb::CaseInsensitiveMultimap header;
-			header.emplace("Content-Length", String(f.getSize()).toStdString());
-			header.emplace("Content-Type", contentType.toStdString());
-			header.emplace("Accept-range", "bytes");
-			header.emplace("Access-Control-Allow-Origin", "*");
-
-			response->write(SimpleWeb::StatusCode::success_ok, header);
-
-			if (fileIsText)
-			{
-				*response << f.loadFileAsString().toStdString();
-			}
-			else
-			{
-				MemoryBlock b;
-				std::unique_ptr<FileInputStream> fs = f.createInputStream();
-				fs->readIntoMemoryBlock(b);
-				response->write((const char*)b.getData(), b.getSize());
-			}
-
+			serveFile(f, response);
 			return;
 		}
 		else

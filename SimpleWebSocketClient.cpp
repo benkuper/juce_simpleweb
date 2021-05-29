@@ -1,4 +1,3 @@
-#include "SimpleWebSocketClient.h"
 SimpleWebSocketClientBase::SimpleWebSocketClientBase() :
 	Thread("Web socket client"),
 	isConnected(false),
