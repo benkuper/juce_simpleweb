@@ -46,6 +46,9 @@ public:
 	virtual void sendExclude(const String& message, const StringArray excludeIds) {}
 	virtual void sendExclude(const MemoryBlock& data, const StringArray excludeIds) {}
 
+	void serveFile(const File& file, std::shared_ptr<HttpServer::Response> response);
+	void serveFile(const File& file, std::shared_ptr<HttpsServer::Response> response);
+
 	void stop();
 	void closeConnection(const String& id, int code = 1000, const String& reason = "YouKnowWhy");
 
@@ -128,6 +131,7 @@ public:
 
 	void httpDefaultCallback(std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request);
 	String getConnectionString(std::shared_ptr<WsServer::Connection> connection) const;
+
 
 	virtual int getNumActiveConnections() const override;
 };

@@ -20,4 +20,5 @@
 
 //==============================================================================
 #include "common/WSCrypto.cpp"
+#include  "MIMETypes.cpp"
 #include "SimpleWebSocketServer.cpp"
