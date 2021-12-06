@@ -194,9 +194,9 @@ void SimpleWebSocketServer::initServer()
 
 
 		http->config.timeout_request = 1;
-		http->config.timeout_content = 2;
+		http->config.timeout_content = 300;
 		http->config.max_request_streambuf_size = 1000000;
-		http->config.thread_pool_size = 2;
+		http->config.thread_pool_size = 4;
 		http->start(std::bind(&SimpleWebSocketServer::httpStartCallback, this, std::placeholders::_1));
 		
 
