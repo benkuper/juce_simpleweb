@@ -242,7 +242,7 @@ namespace WSCrypto
 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 };
 
 		unsigned char* p = (unsigned char*)data.c_str();
-		int len = data.size();
+		int len = (int)data.size();
 		int pad = len > 0 && (len % 4 || p[len - 1] == '=');
 		const size_t L = ((len + 3) / 4 - pad) * 4;
 		std::string str(L / 4 * 3 + pad, '\0');
