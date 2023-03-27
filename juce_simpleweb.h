@@ -23,7 +23,7 @@
   license:          GPLv3
 
   linuxLibs:        ssl,crypto
-  OSXLibs:          libssl,libcrypto
+  OSXLibs:          libssl,libcrypto,z
   windowsLibs:      libssl,libcrypto
   
  END_JUCE_MODULE_DECLARATION
