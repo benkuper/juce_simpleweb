@@ -107,7 +107,7 @@ public:
 	std::unique_ptr<HttpServer> http;
 
 	std::shared_ptr<asio::io_service> ioService;
-	HashMap<String, std::shared_ptr<WsServer::Connection>, DefaultHashFunctions, CriticalSection> connectionMap;
+	HashMap<String, std::shared_ptr<WsServer::Connection>> connectionMap;
 
 	virtual void send(const String& message) override;
 	virtual void send(const char* data, int numData) override;
