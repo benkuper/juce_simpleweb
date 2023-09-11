@@ -29,31 +29,31 @@ public:
 	SimpleWebSocketServerBase();
 	virtual ~SimpleWebSocketServerBase();
 
-	File rootPath;
+	juce::File rootPath;
 	int port;
-	String wsSuffix;
+	juce::String wsSuffix;
 	bool isConnected;
 
-	CriticalSection serverLock;
+	juce::CriticalSection serverLock;
 
-	void start(int port = 8080, const String& wsSuffix = "");
+	void start(int port = 8080, const juce::String& wsSuffix = "");
 
-	virtual void send(const String& message) {}
+	virtual void send(const juce::String& message) {}
 	virtual void send(const char* data, int numData) {}
-	void send(const MemoryBlock& data);
-	virtual void sendTo(const String& message, const String& id) {}
-	virtual void sendTo(const MemoryBlock& data, const String& id) {}
-	virtual void sendExclude(const String& message, const StringArray excludeIds) {}
-	virtual void sendExclude(const MemoryBlock& data, const StringArray excludeIds) {}
+	void send(const juce::MemoryBlock& data);
+	virtual void sendTo(const juce::String& message, const juce::String& id) {}
+	virtual void sendTo(const juce::MemoryBlock& data, const juce::String& id) {}
+	virtual void sendExclude(const juce::String& message, const juce::StringArray excludeIds) {}
+	virtual void sendExclude(const juce::MemoryBlock& data, const juce::StringArray excludeIds) {}
 
-	void serveFile(const File& file, std::shared_ptr<HttpServer::Response> response);
-	void serveFile(const File& file, std::shared_ptr<HttpsServer::Response> response);
+	void serveFile(const juce::File& file, std::shared_ptr<HttpServer::Response> response);
+	void serveFile(const juce::File& file, std::shared_ptr<HttpsServer::Response> response);
 
 	void stop();
-	void closeConnection(const String& id, int code = 1000, const String& reason = "YouKnowWhy");
+	void closeConnection(const juce::String& id, int code = 1000, const juce::String& reason = "YouKnowWhy");
 
 	virtual void stopInternal() {}
-	virtual void closeConnectionInternal(const String& id, int code, const String& reason) {}
+	virtual void closeConnectionInternal(const juce::String& id, int code, const juce::String& reason) {}
 
 	virtual int getNumActiveConnections() const { return 0; }
 
@@ -68,15 +68,15 @@ public:
 	public:
 		/** Destructor. */
 		virtual ~Listener() {}
-		virtual void connectionOpened(const String& id) {}
-		virtual void messageReceived(const String& id, const String& message) {}
-		virtual void dataReceived(const String& id, const MemoryBlock& data) {}
-		virtual void connectionClosed(const String& id, int status, const String& reason) {}
-		virtual void connectionError(const String& id, const String& message) {}
+		virtual void connectionOpened(const juce::String& id) {}
+		virtual void messageReceived(const juce::String& id, const juce::String& message) {}
+		virtual void dataReceived(const juce::String& id, const juce::MemoryBlock& data) {}
+		virtual void connectionClosed(const juce::String& id, int status, const juce::String& reason) {}
+		virtual void connectionError(const juce::String& id, const juce::String& message) {}
 	};
 
 
-	ListenerList<Listener> webSocketListeners;
+	juce::ListenerList<Listener> webSocketListeners;
 	void addWebSocketListener(Listener* newListener) { webSocketListeners.add(newListener); }
 	void removeWebSocketListener(Listener* listener) { webSocketListeners.remove(listener); }
 
@@ -107,17 +107,17 @@ public:
 	std::unique_ptr<HttpServer> http;
 
 	std::shared_ptr<asio::io_service> ioService;
-	HashMap<String, std::shared_ptr<WsServer::Connection>> connectionMap;
+	juce::HashMap<juce::String, std::shared_ptr<WsServer::Connection>> connectionMap;
 
-	virtual void send(const String& message) override;
+	virtual void send(const juce::String& message) override;
 	virtual void send(const char* data, int numData) override;
-	virtual void sendTo(const String& message, const String& id) override;
-	virtual void sendTo(const MemoryBlock& data, const String& id) override;
-	virtual void sendExclude(const String& message, const StringArray excludeIds) override;
-	virtual void sendExclude(const MemoryBlock& data, const StringArray excludeIds) override;
+	virtual void sendTo(const juce::String& message, const juce::String& id) override;
+	virtual void sendTo(const juce::MemoryBlock& data, const juce::String& id) override;
+	virtual void sendExclude(const juce::String& message, const juce::StringArray excludeIds) override;
+	virtual void sendExclude(const juce::MemoryBlock& data, const juce::StringArray excludeIds) override;
 
 	virtual void stopInternal() override;
-	virtual void closeConnectionInternal(const String& id, int code, const String& reason) override;
+	virtual void closeConnectionInternal(const juce::String& id, int code, const juce::String& reason) override;
 
 	void initServer() override;
 
@@ -130,7 +130,7 @@ public:
 	void onHTTPUpgrade(std::unique_ptr<SimpleWeb::HTTP>& socket, std::shared_ptr<HttpServer::Request> request);
 
 	void httpDefaultCallback(std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request);
-	String getConnectionString(std::shared_ptr<WsServer::Connection> connection) const;
+	juce::String getConnectionString(std::shared_ptr<WsServer::Connection> connection) const;
 
 
 	virtual int getNumActiveConnections() const override;
@@ -143,28 +143,28 @@ class SecureWebSocketServer :
 	public SimpleWebSocketServerBase
 {
 public:
-	SecureWebSocketServer(const String & certFile, const String & privateKeyFile, const String & verifyFile = String());
+	SecureWebSocketServer(const juce::String& certFile, const juce::String& privateKeyFile, const juce::String& verifyFile = juce::String());
 	~SecureWebSocketServer();
 
-	String certFile;
-	String keyFile;
-	String verifyFile;
+	juce::String certFile;
+	juce::String keyFile;
+	juce::String verifyFile;
 
 	std::unique_ptr<WssServer> ws;
 	std::unique_ptr<HttpsServer> http;
 
 	std::shared_ptr<asio::io_service> ioService;
-	HashMap<String, std::shared_ptr<WssServer::Connection>> connectionMap;
+	juce::HashMap<juce::String, std::shared_ptr<WssServer::Connection>> connectionMap;
 
-	virtual void send(const String& message) override;
+	virtual void send(const juce::String& message) override;
 	virtual void send(const char* data, int numData) override;
-	virtual void sendTo(const String& message, const String& id) override;
-	virtual void sendTo(const MemoryBlock& data, const String& id) override;
-	virtual void sendExclude(const String& message, const StringArray excludeIds) override;
-	virtual void sendExclude(const MemoryBlock& data, const StringArray excludeIds) override;
+	virtual void sendTo(const juce::String& message, const juce::String& id) override;
+	virtual void sendTo(const juce::MemoryBlock& data, const juce::String& id) override;
+	virtual void sendExclude(const juce::String& message, const juce::StringArray excludeIds) override;
+	virtual void sendExclude(const juce::MemoryBlock& data, const juce::StringArray excludeIds) override;
 	
 	virtual void stopInternal() override;
-	virtual void closeConnectionInternal(const String& id, int code, const String& reason) override;
+	virtual void closeConnectionInternal(const juce::String& id, int code, const juce::String& reason) override;
 
 
 	void initServer() override;
@@ -178,7 +178,7 @@ public:
 	void onHTTPUpgrade(std::unique_ptr<SimpleWeb::HTTPS>& socket, std::shared_ptr<HttpsServer::Request> request);
 
 	void httpDefaultCallback(std::shared_ptr<HttpsServer::Response> response, std::shared_ptr<HttpsServer::Request> request);
-	String getConnectionString(std::shared_ptr<WssServer::Connection> connection) const;
+	juce::String getConnectionString(std::shared_ptr<WssServer::Connection> connection) const;
 
 	virtual int getNumActiveConnections() const override;
 };

@@ -10,6 +10,8 @@
   ==============================================================================
 */
 
+using namespace juce;
+
 SimpleWebSocketServerBase::SimpleWebSocketServerBase() :
 Thread("Web socket"),
 port(0),
