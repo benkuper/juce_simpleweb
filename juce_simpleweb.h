@@ -65,8 +65,6 @@
 
 #include <juce_events/juce_events.h>
 
-using namespace juce;
-
 #if SIMPLEWEB_SECURE_SUPPORTED
 #include "openssl/ssl.h"
 #include "websocket/server_wss.hpp"

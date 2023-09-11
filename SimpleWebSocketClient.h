@@ -17,23 +17,23 @@
 using WsClient = SimpleWeb::SocketClient<SimpleWeb::WS>;
 
 class SimpleWebSocketClientBase :
-	public Thread
+	public juce::Thread
 {
 public:
 	SimpleWebSocketClientBase();
 
 	virtual ~SimpleWebSocketClientBase();
 
-	String serverPath;
+	juce::String serverPath;
 	bool isConnected;
 	bool isClosing;
 
-	virtual void start(const String& _serverPath);
+	virtual void start(const juce::String& _serverPath);
 
-	virtual void send(const String& message) {}
+	virtual void send(const juce::String& message) {}
 	virtual void send(const char* data, int numData) {}
 
-	void send(const MemoryBlock& data);
+	void send(const juce::MemoryBlock& data);
 
 	void stop();
 	virtual void stopInternal() {}
@@ -43,21 +43,21 @@ public:
 
 
 	void handleNewConnectionCallback();
-	void handleConnectionClosedCallback(int status, const String &reason);
-	void handleErrorCallback(const String& message);
+	void handleConnectionClosedCallback(int status, const juce::String& reason);
+	void handleErrorCallback(const juce::String& message);
 
 	class Listener
 	{
 	public:
 		virtual ~Listener() {}
 		virtual void connectionOpened() {}
-		virtual void messageReceived(const String& message) {}
-		virtual void dataReceived(const MemoryBlock& data) {}
-		virtual void connectionClosed(int status, const String& reason) {}
-		virtual void connectionError(const String& message) {}
+		virtual void messageReceived(const juce::String& message) {}
+		virtual void dataReceived(const juce::MemoryBlock& data) {}
+		virtual void connectionClosed(int status, const juce::String& reason) {}
+		virtual void connectionError(const juce::String& message) {}
 	};
 
-	ListenerList<Listener> webSocketListeners;
+	juce::ListenerList<Listener> webSocketListeners;
 	void addWebSocketListener(Listener* newListener) { webSocketListeners.add(newListener); }
 	void removeWebSocketListener(Listener* listener) { webSocketListeners.remove(listener); }
 };
@@ -74,7 +74,7 @@ public:
 	SimpleWebSocketClient();
 	~SimpleWebSocketClient();
 
-	void send(const String& message) override;
+	void send(const juce::String& message) override;
 	void send(const char* data, int numData) override;
 	void stopInternal() override;
 
@@ -100,7 +100,7 @@ public:
 	SecureWebSocketClient();
 	~SecureWebSocketClient();
 
-	void send(const String& message) override;
+	void send(const juce::String& message) override;
 	void send(const char* data, int numData) override;
 	void stopInternal() override;
 
