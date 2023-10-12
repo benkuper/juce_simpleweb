@@ -455,7 +455,7 @@ namespace SimpleWeb {
         acceptor->close(ec);
 
         for(auto &pair : endpoint) {
-          LockGuard lock(pair.second.connections_mutex);
+          LockGuard _lock(pair.second.connections_mutex);
           for(auto &connection : pair.second.connections)
             connection->close();
           pair.second.connections.clear();
