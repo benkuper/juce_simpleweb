@@ -1,4 +1,3 @@
-#include "SimpleWebSocketServer.h"
 
 /*
   ==============================================================================
@@ -10,12 +9,14 @@
   ==============================================================================
 */
 
+#include "JuceHeader.h"
+
 using namespace juce;
 
 SimpleWebSocketServerBase::SimpleWebSocketServerBase() :
-Thread("Web socket"),
-port(0),
-handler(nullptr)
+	Thread("Web socket"),
+	port(0),
+	handler(nullptr)
 {
 
 }
@@ -42,15 +43,15 @@ void SimpleWebSocketServerBase::send(const MemoryBlock& data)
 void SimpleWebSocketServerBase::stop()
 {
 
-//#if !JUCE_DEBUG
-//	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(500);
-//#endif
+	//#if !JUCE_DEBUG
+	//	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(500);
+	//#endif
 
 	stopInternal();
 
-//#if JUCE_DEBUG //don't know why the order is not the same for debug and release...
-//	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(500);
-//#endif
+	//#if JUCE_DEBUG //don't know why the order is not the same for debug and release...
+	//	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(500);
+	//#endif
 
 }
 
@@ -83,7 +84,7 @@ SimpleWebSocketServer::~SimpleWebSocketServer()
 
 void SimpleWebSocketServer::send(const String& message)
 {
-	HashMap<String, std::shared_ptr<WsServer::Connection>>::Iterator it(connectionMap);
+	HashMap<String, std::shared_ptr<WsServer::Connection>, DefaultHashFunctions, CriticalSection>::Iterator it(connectionMap);
 	while (it.next()) it.getValue()->send(message.toStdString());
 }
 
@@ -91,7 +92,7 @@ void SimpleWebSocketServer::send(const char* data, int numData)
 {
 	std::shared_ptr<WsServer::OutMessage> out_message = std::make_shared<WsServer::OutMessage>();
 	out_message->write(data, numData);
-	HashMap<String, std::shared_ptr<WsServer::Connection>>::Iterator it(connectionMap);
+	HashMap<String, std::shared_ptr<WsServer::Connection>, DefaultHashFunctions, CriticalSection>::Iterator it(connectionMap);
 	while (it.next())
 	{
 		it.getValue()->send(out_message, nullptr, 130); //130 = binary
@@ -120,7 +121,7 @@ void SimpleWebSocketServer::sendTo(const MemoryBlock& data, const String& id)
 
 void SimpleWebSocketServer::sendExclude(const String& message, const StringArray excludeIds)
 {
-	HashMap<String, std::shared_ptr<WsServer::Connection>>::Iterator it(connectionMap);
+	HashMap<String, std::shared_ptr<WsServer::Connection>, DefaultHashFunctions, CriticalSection>::Iterator it(connectionMap);
 	while (it.next())
 	{
 		if (excludeIds.contains(it.getKey())) continue;
@@ -133,7 +134,7 @@ void SimpleWebSocketServer::sendExclude(const MemoryBlock& data, const StringArr
 	std::shared_ptr<WsServer::OutMessage> out_message = std::make_shared<WsServer::OutMessage>();
 	out_message->write((const char*)data.getData(), data.getSize());
 
-	HashMap<String, std::shared_ptr<WsServer::Connection>>::Iterator it(connectionMap);
+	HashMap<String, std::shared_ptr<WsServer::Connection>, DefaultHashFunctions, CriticalSection>::Iterator it(connectionMap);
 	while (it.next())
 	{
 		if (excludeIds.contains(it.getKey())) continue;
@@ -146,19 +147,19 @@ void SimpleWebSocketServer::stopInternal()
 
 	if (ioService != nullptr) ioService->stop();
 	ScopedLock lock(serverLock);
-	
+
 	if (ws != nullptr)
 	{
 		std::unordered_set<std::shared_ptr<WsServer::Connection>> connections = ws->get_connections();
 		for (auto& c : connections) c->send_close(1000, "Server destroyed");
-			connectionMap.clear();
+		connectionMap.clear();
 
 		ws->stop();
 	}
 
-	
 
-	if(http != nullptr) http->stop();
+
+	if (http != nullptr) http->stop();
 
 	ws.reset();
 	http.reset();
@@ -185,7 +186,7 @@ void SimpleWebSocketServer::initServer()
 		http->default_resource["GET"] = std::bind(&SimpleWebSocketServer::httpDefaultCallback, this, std::placeholders::_1, std::placeholders::_2);
 		http->on_upgrade = std::bind(&SimpleWebSocketServer::onHTTPUpgrade, this, std::placeholders::_1, std::placeholders::_2);
 
-	//WebSocket init
+		//WebSocket init
 		ws.reset(new WsServer());
 		auto& wsEndpoint = ws->endpoint[("^" + wsSuffix + "/?$").toStdString()];
 
@@ -200,10 +201,11 @@ void SimpleWebSocketServer::initServer()
 		http->config.max_request_streambuf_size = 1000000;
 		http->config.thread_pool_size = 4;
 		http->start(std::bind(&SimpleWebSocketServer::httpStartCallback, this, std::placeholders::_1));
-		
+
 
 		if (ioService != nullptr) ioService->run();
-	}catch(std::exception e)
+	}
+	catch (std::exception e)
 	{
 		DBG("Error init server " << e.what());
 	}
@@ -373,9 +375,9 @@ void SimpleWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpServer::Resp
 #if SIMPLEWEB_SECURE_SUPPORTED
 
 SecureWebSocketServer::SecureWebSocketServer(const String& certFile, const String& privateKeyFile, const String& verifyFile) :
-certFile(certFile),
-keyFile(privateKeyFile),
-verifyFile(verifyFile)
+	certFile(certFile),
+	keyFile(privateKeyFile),
+	verifyFile(verifyFile)
 {
 }
 
@@ -447,14 +449,14 @@ void SecureWebSocketServer::sendExclude(const MemoryBlock& data, const StringArr
 void SecureWebSocketServer::stopInternal()
 {
 	if (ioService != nullptr) ioService->stop();
-	
+
 	ScopedLock lock(serverLock);
-	
+
 	if (ws != nullptr)
 	{
 		std::unordered_set<std::shared_ptr<WssServer::Connection>> connections = ws->get_connections();
 		for (auto& c : connections) c->send_close(1000, "Server destroyed");
-			connectionMap.clear();
+		connectionMap.clear();
 
 		ws->stop();
 	}
@@ -476,11 +478,11 @@ void SecureWebSocketServer::initServer()
 {
 
 	ScopedLock lock(serverLock);
-	
+
 	try
 	{
 		ioService = std::make_shared<asio::io_service>();
-		
+
 		http.reset(new HttpsServer(certFile.toStdString(), keyFile.toStdString(), verifyFile.toStdString()));
 		http->config.port = port;
 		http->io_service = ioService;
@@ -488,9 +490,9 @@ void SecureWebSocketServer::initServer()
 		http->default_resource["GET"] = std::bind(&SecureWebSocketServer::httpDefaultCallback, this, std::placeholders::_1, std::placeholders::_2);
 		http->on_upgrade = std::bind(&SecureWebSocketServer::onHTTPUpgrade, this, std::placeholders::_1, std::placeholders::_2);
 
-        //WebSocket init
+		//WebSocket init
 		ws.reset(new WssServer(certFile.toStdString(), keyFile.toStdString(), verifyFile.toStdString()));
-        //ws->config.timeout_idle = 1;
+		//ws->config.timeout_idle = 1;
 		ws->config.timeout_request = 2;
 
 		auto& wsEndpoint = ws->endpoint[("^" + wsSuffix + "/?$").toStdString()];
@@ -507,7 +509,8 @@ void SecureWebSocketServer::initServer()
 		http->start(std::bind(&SecureWebSocketServer::httpStartCallback, this, std::placeholders::_1));
 		if (ioService != nullptr) ioService->run();
 
-	}catch(std::exception e)
+	}
+	catch (std::exception e)
 	{
 		DBG("Error init server " << e.what());
 	}

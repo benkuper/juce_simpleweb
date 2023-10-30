@@ -107,7 +107,7 @@ public:
 	std::unique_ptr<HttpServer> http;
 
 	std::shared_ptr<asio::io_service> ioService;
-	juce::HashMap<juce::String, std::shared_ptr<WsServer::Connection>> connectionMap;
+	juce::HashMap<juce::String, std::shared_ptr<WsServer::Connection>, juce::DefaultHashFunctions, juce::CriticalSection> connectionMap;
 
 	virtual void send(const juce::String& message) override;
 	virtual void send(const char* data, int numData) override;
@@ -162,7 +162,7 @@ public:
 	virtual void sendTo(const juce::MemoryBlock& data, const juce::String& id) override;
 	virtual void sendExclude(const juce::String& message, const juce::StringArray excludeIds) override;
 	virtual void sendExclude(const juce::MemoryBlock& data, const juce::StringArray excludeIds) override;
-	
+
 	virtual void stopInternal() override;
 	virtual void closeConnectionInternal(const juce::String& id, int code, const juce::String& reason) override;
 
