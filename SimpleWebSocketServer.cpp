@@ -104,7 +104,7 @@ void SimpleWebSocketServer::sendTo(const String& message, const String& id)
 	if (connectionMap.contains(id)) connectionMap[id]->send(message.toStdString());
 	else
 	{
-		DBG("[Dashboard] Websocket connection not found : " << id);
+		DBG("Websocket connection not found : " << id);
 	}
 }
 
@@ -115,7 +115,7 @@ void SimpleWebSocketServer::sendTo(const MemoryBlock& data, const String& id)
 	if (connectionMap.contains(id)) connectionMap[id]->send(out_message, nullptr, 130); //130 = binary
 	else
 	{
-		DBG("[Dashboard] Websocket connection not found : " << id);
+		DBG("Websocket connection not found : " << id);
 	}
 }
 
