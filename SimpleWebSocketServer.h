@@ -30,13 +30,14 @@ public:
 	virtual ~SimpleWebSocketServerBase();
 
 	juce::File rootPath;
+	juce::String localAddress = "";
 	int port;
 	juce::String wsSuffix;
 	bool isConnected;
 
 	juce::CriticalSection serverLock;
 
-	void start(int port = 8080, const juce::String& wsSuffix = "");
+	void start(int port = 8080, const juce::String& wsSuffix = "", const juce::String& _localAddress = "");
 
 	virtual void send(const juce::String& message) {}
 	virtual void send(const char* data, int numData) {}
