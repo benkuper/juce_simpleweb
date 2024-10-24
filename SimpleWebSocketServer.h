@@ -30,7 +30,7 @@ public:
 	virtual ~SimpleWebSocketServerBase();
 
 	juce::File rootPath;
-	juce::String localAddress = "";
+	juce::String localAddress;
 	int port;
 	juce::String wsSuffix;
 	bool isConnected;

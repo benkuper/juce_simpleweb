@@ -181,7 +181,7 @@ void SimpleWebSocketServer::initServer()
 	{
 		ioService = std::make_shared<asio::io_service>();
 		http.reset(new HttpServer());
-		if (localAddress.length() > 0) http->config.address = localAddress.toStdString();
+		if (localAddress.isNotEmpty()) http->config.address = localAddress.toStdString();
 		http->config.port = port;
 		http->io_service = ioService;
 
