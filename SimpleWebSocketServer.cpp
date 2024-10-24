@@ -26,8 +26,9 @@ SimpleWebSocketServerBase::~SimpleWebSocketServerBase()
 	stopThread(2000);
 }
 
-void SimpleWebSocketServerBase::start(int _port, const String& _wsSuffix)
+void SimpleWebSocketServerBase::start(int _port, const String& _wsSuffix, const String& _localAddress)
 {
+	localAddress = _localAddress;
 	port = _port;
 	wsSuffix = _wsSuffix;
 	startThread();
@@ -180,6 +181,7 @@ void SimpleWebSocketServer::initServer()
 	{
 		ioService = std::make_shared<asio::io_service>();
 		http.reset(new HttpServer());
+		if (localAddress.isNotEmpty()) http->config.address = localAddress.toStdString();
 		http->config.port = port;
 		http->io_service = ioService;
 
