@@ -202,6 +202,7 @@ void SimpleWebSocketServer::initServer()
 		http->config.timeout_content = 300;
 		http->config.max_request_streambuf_size = 1000000;
 		http->config.thread_pool_size = 4;
+		http->config.reuse_address = false;
 		http->start(std::bind(&SimpleWebSocketServer::httpStartCallback, this, std::placeholders::_1));
 
 
@@ -508,6 +509,7 @@ void SecureWebSocketServer::initServer()
 		http->config.timeout_content = 2;
 		http->config.max_request_streambuf_size = 1000000;
 		http->config.thread_pool_size = 2;
+		http->config.reuse_address = false;
 		http->start(std::bind(&SecureWebSocketServer::httpStartCallback, this, std::placeholders::_1));
 		if (ioService != nullptr) ioService->run();
 
