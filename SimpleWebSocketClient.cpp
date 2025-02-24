@@ -52,6 +52,7 @@ void SimpleWebSocketClientBase::handleNewConnectionCallback()
 
 void SimpleWebSocketClientBase::handleConnectionClosedCallback(int status, const String& reason)
 {
+	this->isConnected = false;
 	this->webSocketListeners.call(&Listener::connectionClosed, status, reason);
 }
 
