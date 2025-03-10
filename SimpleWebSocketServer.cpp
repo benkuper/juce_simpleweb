@@ -16,6 +16,7 @@ using namespace juce;
 SimpleWebSocketServerBase::SimpleWebSocketServerBase() :
 	Thread("Web socket"),
 	port(0),
+	allowAddressReuse(false),
 	handler(nullptr)
 {
 
@@ -26,15 +27,15 @@ SimpleWebSocketServerBase::~SimpleWebSocketServerBase()
 	stopThread(2000);
 }
 
-void SimpleWebSocketServerBase::start(int _port, const String& _wsSuffix, const String& _localAddress)
+void SimpleWebSocketServerBase::start(int _port, const String& _wsSuffix, const String& _localAddress, bool allowAddrReuse)
 {
+	stopThread(1000);
 	localAddress = _localAddress;
 	port = _port;
 	wsSuffix = _wsSuffix;
+	allowAddressReuse = allowAddrReuse;
 	startThread();
 }
-
-
 
 void SimpleWebSocketServerBase::send(const MemoryBlock& data)
 {
@@ -165,6 +166,8 @@ void SimpleWebSocketServer::stopInternal()
 	ws.reset();
 	http.reset();
 	ioService.reset();
+
+	stopThread(1000);
 }
 
 void SimpleWebSocketServer::closeConnectionInternal(const String& id, int code, const String& reason)
@@ -180,6 +183,7 @@ void SimpleWebSocketServer::initServer()
 	try
 	{
 		ioService = std::make_shared<asio::io_service>();
+		DBG("HTTP create");
 		http.reset(new HttpServer());
 		if (localAddress.isNotEmpty()) http->config.address = localAddress.toStdString();
 		http->config.port = port;
@@ -189,6 +193,7 @@ void SimpleWebSocketServer::initServer()
 		http->on_upgrade = std::bind(&SimpleWebSocketServer::onHTTPUpgrade, this, std::placeholders::_1, std::placeholders::_2);
 
 		//WebSocket init
+		DBG("WS create");
 		ws.reset(new WsServer());
 		auto& wsEndpoint = ws->endpoint[("^" + wsSuffix + "/?$").toStdString()];
 
@@ -202,15 +207,20 @@ void SimpleWebSocketServer::initServer()
 		http->config.timeout_content = 300;
 		http->config.max_request_streambuf_size = 1000000;
 		http->config.thread_pool_size = 4;
-		http->config.reuse_address = false;
+		http->config.reuse_address = allowAddressReuse;
+
+		DBG("Http start");
+
 		http->start(std::bind(&SimpleWebSocketServer::httpStartCallback, this, std::placeholders::_1));
 
-
+		DBG("Service run");
+		webSocketListeners.call(&Listener::serverInitSuccess);
 		if (ioService != nullptr) ioService->run();
 	}
 	catch (std::exception e)
 	{
 		DBG("Error init server " << e.what());
+		webSocketListeners.call(&Listener::serverInitError, e.what());
 	}
 }
 
@@ -509,14 +519,17 @@ void SecureWebSocketServer::initServer()
 		http->config.timeout_content = 2;
 		http->config.max_request_streambuf_size = 1000000;
 		http->config.thread_pool_size = 2;
-		http->config.reuse_address = false;
+		http->config.reuse_address = allowAddressReuse;
 		http->start(std::bind(&SecureWebSocketServer::httpStartCallback, this, std::placeholders::_1));
+
 		if (ioService != nullptr) ioService->run();
+		webSocketListeners.call(&Listener::serverInitSuccess);
 
 	}
 	catch (std::exception e)
 	{
 		DBG("Error init server " << e.what());
+		webSocketListeners.call(&Listener::serverInitError, e.what());
 	}
 }
 

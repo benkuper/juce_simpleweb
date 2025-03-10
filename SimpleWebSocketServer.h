@@ -32,12 +32,13 @@ public:
 	juce::File rootPath;
 	juce::String localAddress;
 	int port;
+	bool allowAddressReuse;
 	juce::String wsSuffix;
 	bool isConnected;
 
 	juce::CriticalSection serverLock;
 
-	void start(int port = 8080, const juce::String& wsSuffix = "", const juce::String& _localAddress = "");
+	void start(int port = 8080, const juce::String& wsSuffix = "", const juce::String& _localAddress = "", bool allowAddressReuse = false);
 
 	virtual void send(const juce::String& message) {}
 	virtual void send(const char* data, int numData) {}
@@ -62,13 +63,13 @@ public:
 
 	virtual void initServer() {}
 
-
-
 	class  Listener
 	{
 	public:
 		/** Destructor. */
 		virtual ~Listener() {}
+		virtual void serverInitSuccess() {}
+		virtual void serverInitError(const juce::String& id) {}
 		virtual void connectionOpened(const juce::String& id) {}
 		virtual void messageReceived(const juce::String& id, const juce::String& message) {}
 		virtual void dataReceived(const juce::String& id, const juce::MemoryBlock& data) {}
