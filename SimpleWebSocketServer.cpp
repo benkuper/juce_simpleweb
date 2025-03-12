@@ -189,7 +189,12 @@ void SimpleWebSocketServer::initServer()
 		http->config.port = port;
 		http->io_service = ioService;
 
-		http->default_resource["GET"] = std::bind(&SimpleWebSocketServer::httpDefaultCallback, this, std::placeholders::_1, std::placeholders::_2);
+		std::function<void(std::shared_ptr<HttpServer::Response>, std::shared_ptr<HttpServer::Request>)> httpCallbackFunc = std::bind(&SimpleWebSocketServer::httpDefaultCallback, this, std::placeholders::_1, std::placeholders::_2);
+		http->default_resource["GET"] = httpCallbackFunc;
+		http->default_resource["POST"] = httpCallbackFunc;
+		http->default_resource["PUT"] = httpCallbackFunc;
+		http->default_resource["DELETE"] = httpCallbackFunc;
+		http->default_resource["PATCH"] = httpCallbackFunc;
 		http->on_upgrade = std::bind(&SimpleWebSocketServer::onHTTPUpgrade, this, std::placeholders::_1, std::placeholders::_2);
 
 		//WebSocket init
