@@ -93,6 +93,7 @@ public:
 #endif
 	};
 
+	[[deprecated("The handler should be deleted soon, please use the handlers array instead.")]]
 	RequestHandler* handler;
 
 	/// @brief Add a new http request handler. Incoming requests will be forwarded to handlers in the order they've been added
