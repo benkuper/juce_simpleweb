@@ -70,7 +70,29 @@ void SimpleWebSocketServerBase::run()
 	initServer();
 }
 
+void SimpleWebSocketServerBase::addHTTPRequestHandler(RequestHandler* newHandler) 
+{
+	if (handler == nullptr)
+	{
+		handler = newHandler;
+	}
+	else
+	{
+		handlers.add(newHandler); 
+	}
+}
 
+void SimpleWebSocketServerBase::removeHTTPRequestHandler(RequestHandler* handlerToRemove) 
+{
+	if (handler == handlerToRemove)
+	{
+		handler = nullptr;
+	}
+	else
+	{
+		handlers.removeFirstMatchingValue(handlerToRemove); 
+	}
+}
 
 //SIMPLE
 
@@ -354,9 +376,16 @@ void SimpleWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpServer::Resp
 {
 	if (handler != nullptr)
 	{
-
 		bool handled = handler->handleHTTPRequest(response, request);
 		if (handled) return;
+	}
+
+	for (auto& secondaryHandler : handlers)
+	{
+		if (secondaryHandler->handleHTTPRequest(response, request))
+		{
+			return;
+		}
 	}
 
 	if (rootPath.exists() && rootPath.isDirectory())
@@ -604,6 +633,14 @@ void SecureWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpsServer::Res
 	{
 		bool handled = handler->handleHTTPSRequest(response, request);
 		if (handled) return;
+	}
+
+	for (auto& secondaryHandler : handlers)
+	{
+		if (secondaryHandler->handleHTTPSRequest(response, request))
+		{
+			return;
+		}
 	}
 
 	if (rootPath.exists() && rootPath.isDirectory())
