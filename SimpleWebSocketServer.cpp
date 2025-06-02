@@ -17,7 +17,8 @@ SimpleWebSocketServerBase::SimpleWebSocketServerBase() :
 	Thread("Web socket"),
 	port(0),
 	allowAddressReuse(false),
-	handler(nullptr)
+	handler(nullptr),
+	isConnected(false)
 {
 
 }
@@ -241,6 +242,7 @@ void SimpleWebSocketServer::initServer()
 		http->start(std::bind(&SimpleWebSocketServer::httpStartCallback, this, std::placeholders::_1));
 
 		DBG("Service run");
+		isConnected = true;
 		webSocketListeners.call(&Listener::serverInitSuccess);
 		if (ioService != nullptr) ioService->run();
 	}
