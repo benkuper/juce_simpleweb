@@ -35,6 +35,7 @@ void SimpleWebSocketServerBase::start(int _port, const String& _wsSuffix, const 
 	port = _port;
 	wsSuffix = _wsSuffix;
 	allowAddressReuse = allowAddrReuse;
+	isConnecting = true;
 	startThread();
 }
 
@@ -51,6 +52,8 @@ void SimpleWebSocketServerBase::stop()
 	//#endif
 
 	stopInternal();
+	isConnecting = false;
+	isConnected = false;
 
 	//#if JUCE_DEBUG //don't know why the order is not the same for debug and release...
 	//	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(500);
@@ -67,7 +70,7 @@ void SimpleWebSocketServerBase::run()
 {
 	//HTTP init
 	isConnected = false;
-
+	isConnecting = true;
 	initServer();
 }
 
@@ -182,8 +185,6 @@ void SimpleWebSocketServer::stopInternal()
 		ws->stop();
 	}
 
-
-
 	if (http != nullptr) http->stop();
 
 	ws.reset();
@@ -243,7 +244,10 @@ void SimpleWebSocketServer::initServer()
 
 		DBG("Service run");
 		isConnected = true;
+		isConnecting = false;
+
 		webSocketListeners.call(&Listener::serverInitSuccess);
+
 		if (ioService != nullptr) ioService->run();
 	}
 	catch (std::exception e)
@@ -558,8 +562,11 @@ void SecureWebSocketServer::initServer()
 		http->config.reuse_address = allowAddressReuse;
 		http->start(std::bind(&SecureWebSocketServer::httpStartCallback, this, std::placeholders::_1));
 
-		if (ioService != nullptr) ioService->run();
+		isConnected = true;
+		isConnecting = false;
 		webSocketListeners.call(&Listener::serverInitSuccess);
+
+		if (ioService != nullptr) ioService->run();
 
 	}
 	catch (std::exception e)

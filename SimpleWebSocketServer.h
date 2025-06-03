@@ -35,6 +35,7 @@ public:
 	bool allowAddressReuse;
 	juce::String wsSuffix;
 	bool isConnected;
+	bool isConnecting;
 
 	juce::CriticalSection serverLock;
 
