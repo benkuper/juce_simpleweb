@@ -17,7 +17,6 @@ SimpleWebSocketServerBase::SimpleWebSocketServerBase() :
 	Thread("Web socket"),
 	port(0),
 	allowAddressReuse(false),
-	handler(nullptr),
 	isConnected(false)
 {
 
@@ -74,28 +73,14 @@ void SimpleWebSocketServerBase::run()
 	initServer();
 }
 
-void SimpleWebSocketServerBase::addHTTPRequestHandler(RequestHandler* newHandler) 
+void SimpleWebSocketServerBase::addHTTPRequestHandler(RequestHandler* newHandler)
 {
-	if (handler == nullptr)
-	{
-		handler = newHandler;
-	}
-	else
-	{
-		handlers.add(newHandler); 
-	}
+	handlers.add(newHandler);
 }
 
-void SimpleWebSocketServerBase::removeHTTPRequestHandler(RequestHandler* handlerToRemove) 
+void SimpleWebSocketServerBase::removeHTTPRequestHandler(RequestHandler* handlerToRemove)
 {
-	if (handler == handlerToRemove)
-	{
-		handler = nullptr;
-	}
-	else
-	{
-		handlers.removeFirstMatchingValue(handlerToRemove); 
-	}
+	handlers.removeAllInstancesOf(handlerToRemove);
 }
 
 //SIMPLE
@@ -380,12 +365,6 @@ void SimpleWebSocketServer::onHTTPUpgrade(std::unique_ptr<SimpleWeb::HTTP>& sock
 
 void SimpleWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request)
 {
-	if (handler != nullptr)
-	{
-		bool handled = handler->handleHTTPRequest(response, request);
-		if (handled) return;
-	}
-
 	for (auto& secondaryHandler : handlers)
 	{
 		if (secondaryHandler->handleHTTPRequest(response, request))
@@ -638,15 +617,9 @@ void SecureWebSocketServer::onHTTPUpgrade(std::unique_ptr<SimpleWeb::HTTPS>& soc
 
 void SecureWebSocketServer::httpDefaultCallback(std::shared_ptr<HttpsServer::Response> response, std::shared_ptr<HttpsServer::Request> request)
 {
-	if (handler != nullptr)
+	for (auto& handler : handlers)
 	{
-		bool handled = handler->handleHTTPSRequest(response, request);
-		if (handled) return;
-	}
-
-	for (auto& secondaryHandler : handlers)
-	{
-		if (secondaryHandler->handleHTTPSRequest(response, request))
+		if (handler->handleHTTPSRequest(response, request))
 		{
 			return;
 		}
