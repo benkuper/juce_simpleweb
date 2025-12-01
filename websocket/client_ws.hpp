@@ -70,6 +70,8 @@ namespace SimpleWeb {
 			std::string http_version, status_code;
 			CaseInsensitiveMultimap header;
 
+			socket_type* get_socket() { return socket.get(); }
+
 		private:
 			template <typename... Args>
 			Connection(std::shared_ptr<ScopeRunner> handler_runner_, long timeout_idle, Args &&...args) noexcept

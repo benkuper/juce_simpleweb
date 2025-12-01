@@ -128,6 +128,10 @@ void SimpleWebSocketClient::onMessageCallback(std::shared_ptr<WsClient::Connecti
 void SimpleWebSocketClient::onNewConnectionCallback(std::shared_ptr<WsClient::Connection> _connection)
 {
 	this->connection = _connection;
+
+	asio::ip::tcp::socket::keep_alive kaOption(true);
+	this->connection->get_socket()->set_option(kaOption);
+
 	handleNewConnectionCallback();
 }
 
