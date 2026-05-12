@@ -556,17 +556,14 @@ namespace SimpleWeb {
             CaseInsensitiveMultimap response_header = config.header;
             response_header.emplace("Upgrade", "websocket");
             response_header.emplace("Connection", "Upgrade");
+            
+            // Spec: https://websocket.org/reference/handshake/#the-sec-websocket-accept-calculation
             static auto ws_magic_string = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-
             
             std::string inSha = key_it->second + ws_magic_string;
-            unsigned char hash[20];
-            WSCrypto::calcSha1(inSha.c_str(), (int)inSha.size(), hash);
-
-            std::string hexString((const char*)hash);
-            hexString.resize(20);
-
-            std::string b64 = WSCrypto::base64_encode((const unsigned char *)hexString.c_str(), (int)hexString.size());
+            std::array<std::byte, 20> sha1Hash;
+            WSCrypto::calcSha1(inSha.c_str(), (int) inSha.size(), (unsigned char*) sha1Hash.data());
+            std::string b64 = WSCrypto::base64_encode((unsigned char*) sha1Hash.data(), 20);
 
             response_header.emplace("Sec-WebSocket-Accept", b64);
 
