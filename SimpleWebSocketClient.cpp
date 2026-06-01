@@ -12,9 +12,10 @@ SimpleWebSocketClientBase::~SimpleWebSocketClientBase()
 	stop();
 }
 
-void SimpleWebSocketClientBase::start(const String& _serverPath)
+void SimpleWebSocketClientBase::start(const String& _serverPath, int timeOutInSeconds)
 {
 	this->serverPath = _serverPath;
+	this->requestTimeOut = timeOutInSeconds;
 	startThread();
 }
 
@@ -36,7 +37,6 @@ void SimpleWebSocketClientBase::stop()
 void SimpleWebSocketClientBase::run()
 {
 	this->isConnected = false;
-	String s = this->serverPath;
 
 	initWS();
 
@@ -100,7 +100,7 @@ void SimpleWebSocketClient::initWS()
 {
 	ws.reset(new WsClient(serverPath.toStdString()));
 
-	ws->config.timeout_request = 1000;
+	ws->config.timeout_request = requestTimeOut;
 	ws->config.timeout_idle = 1000;
 
 	ws->on_message = std::bind(&SimpleWebSocketClient::onMessageCallback, this, std::placeholders::_1, std::placeholders::_2);
@@ -183,7 +183,7 @@ void SecureWebSocketClient::initWS()
 {
 	ws.reset(new WssClient(serverPath.toStdString(), false));
 
-	ws->config.timeout_request = 1000;
+	ws->config.timeout_request = requestTimeOut;
 	ws->config.timeout_idle = 1000;
 
 	ws->on_message = std::bind(&SecureWebSocketClient::onMessageCallback, this, std::placeholders::_1, std::placeholders::_2);
