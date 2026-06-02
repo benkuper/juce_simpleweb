@@ -28,7 +28,7 @@ public:
 	bool isConnected;
 	bool isClosing;
 
-	virtual void start(const juce::String& _serverPath);
+	virtual void start(const juce::String& _serverPath, int timeOutInSeconds = 1000);
 
 	virtual void send(const juce::String& message) {}
 	virtual void send(const char* data, int numData) {}
@@ -60,6 +60,9 @@ public:
 	juce::ListenerList<Listener> webSocketListeners;
 	void addWebSocketListener(Listener* newListener) { webSocketListeners.add(newListener); }
 	void removeWebSocketListener(Listener* listener) { webSocketListeners.remove(listener); }
+
+protected:
+	int requestTimeOut = 1000; // In seconds 
 };
 
 class SimpleWebSocketClient :
