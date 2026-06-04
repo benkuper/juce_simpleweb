@@ -362,7 +362,7 @@ void SimpleWebSocketServer::onErrorCallback(std::shared_ptr<WsServer::Connection
 {
 	String id = getConnectionString(connection);
 	connectionMap.remove(id);
-	webSocketListeners.call(&Listener::connectionError, id, ec.message());
+	webSocketListeners.call(&Listener::connectionError, id, ec.value(), ec.message());
 }
 
 void SimpleWebSocketServer::httpStartCallback(unsigned short _port)
@@ -654,7 +654,7 @@ void SecureWebSocketServer::onErrorCallback(std::shared_ptr<WssServer::Connectio
 {
 	String id = getConnectionString(connection);
 	connectionMap.remove(id);
-	webSocketListeners.call(&Listener::connectionError, id, ec.message());
+	webSocketListeners.call(&Listener::connectionError, id, ec.value(), ec.message());
 }
 
 void SecureWebSocketServer::httpStartCallback(unsigned short _port)
