@@ -75,7 +75,7 @@ public:
 		virtual void messageReceived(const juce::String& id, const juce::String& message) {}
 		virtual void dataReceived(const juce::String& id, const juce::MemoryBlock& data) {}
 		virtual void connectionClosed(const juce::String& id, int status, const juce::String& reason) {}
-		virtual void connectionError(const juce::String& id, const juce::String& message) {}
+		virtual void connectionError(const juce::String& id, int status, const juce::String& message) {}
 	};
 
 

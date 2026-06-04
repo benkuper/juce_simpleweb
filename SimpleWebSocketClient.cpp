@@ -56,10 +56,10 @@ void SimpleWebSocketClientBase::handleConnectionClosedCallback(int status, const
 	this->webSocketListeners.call(&Listener::connectionClosed, status, reason);
 }
 
-void SimpleWebSocketClientBase::handleErrorCallback(const String& message)
+void SimpleWebSocketClientBase::handleErrorCallback(int status, const String& message)
 {
 	this->isConnected = false;
-	if (!this->isClosing) this->webSocketListeners.call(&Listener::connectionError, message);
+	if (!this->isClosing) this->webSocketListeners.call(&Listener::connectionError, status, message);
 }
 
 
@@ -142,7 +142,7 @@ void SimpleWebSocketClient::onConnectionCloseCallback(std::shared_ptr<WsClient::
 
 void SimpleWebSocketClient::onErrorCallback(std::shared_ptr<WsClient::Connection>, const SimpleWeb::error_code& ec)
 {
-	handleErrorCallback(ec.message());
+	handleErrorCallback(ec.value(), ec.message());
 }
 
 
@@ -217,6 +217,6 @@ void SecureWebSocketClient::onConnectionCloseCallback(std::shared_ptr<WssClient:
 
 void SecureWebSocketClient::onErrorCallback(std::shared_ptr<WssClient::Connection>, const SimpleWeb::error_code& ec)
 {
-	handleErrorCallback(ec.message());
+	handleErrorCallback(ec.value(), ec.message());
 }
 #endif

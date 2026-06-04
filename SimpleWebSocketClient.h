@@ -44,7 +44,7 @@ public:
 
 	void handleNewConnectionCallback();
 	void handleConnectionClosedCallback(int status, const juce::String& reason);
-	void handleErrorCallback(const juce::String& message);
+	void handleErrorCallback(int status, const juce::String& message);
 
 	class Listener
 	{
@@ -54,7 +54,7 @@ public:
 		virtual void messageReceived(const juce::String& message) {}
 		virtual void dataReceived(const juce::MemoryBlock& data) {}
 		virtual void connectionClosed(int status, const juce::String& reason) {}
-		virtual void connectionError(const juce::String& message) {}
+		virtual void connectionError(int status, const juce::String& message) {}
 	};
 
 	juce::ListenerList<Listener> webSocketListeners;
