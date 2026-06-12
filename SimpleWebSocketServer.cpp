@@ -38,17 +38,13 @@ void SimpleWebSocketServerBase::send(const MemoryBlock& data)
 
 void SimpleWebSocketServerBase::stop()
 {
-	// #if !JUCE_DEBUG
-	//	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(500);
-	// #endif
+	// Signal the thread to allow it to properly finish its business
+	signalThreadShouldExit();
 
 	stopInternal();
+
 	isConnecting = false;
 	isConnected = false;
-
-	// #if JUCE_DEBUG //don't know why the order is not the same for debug and release...
-	//	if (Thread::getCurrentThreadId() != this->getThreadId()) stopThread(500);
-	// #endif
 }
 
 void SimpleWebSocketServerBase::closeConnection(const String& id, int code, const String& reason)
@@ -61,7 +57,10 @@ void SimpleWebSocketServerBase::run()
 	// HTTP init
 	isConnected = false;
 	isConnecting = true;
+	
 	initServer();
+
+	isConnected = false;
 }
 
 void SimpleWebSocketServerBase::addHTTPRequestHandler(RequestHandler* newHandler)
@@ -163,6 +162,10 @@ void SimpleWebSocketServer::stopInternal()
 	if (ioService != nullptr)
 	{
 		ioService->stop();
+		while (isConnected)
+		{
+			wait(10);
+		}
 	}
 	ScopedLock lock(serverLock);
 
