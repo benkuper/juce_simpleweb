@@ -191,6 +191,13 @@ namespace SimpleWeb {
 			/// This is useful when implementing a HTTP/1.0-server sending content
 			/// without specifying the content length.
 			bool close_connection_after_response = false;
+
+			/// Cancel a streaming response, including an outstanding asynchronous write.
+			/// Post to the socket executor so callers may use this from another thread.
+			void closeConnection() noexcept {
+				auto connection = session->connection;
+				asio::post(connection->socket->get_executor(), [connection] { connection->close(); });
+			}
 		};
 
 		class Content : public std::istream {
