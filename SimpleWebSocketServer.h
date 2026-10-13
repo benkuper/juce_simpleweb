@@ -142,7 +142,8 @@ public:
 	juce::String getConnectionString(std::shared_ptr<WsServer::Connection> connection) const;
 
 
-	virtual int getNumActiveConnections() const override;
+	int getNumActiveConnections() const override;
+	const std::shared_ptr<const WsServer::Connection> getConnection(const juce::String& id) const;
 };
 
 
@@ -189,7 +190,8 @@ public:
 	void httpDefaultCallback(std::shared_ptr<HttpsServer::Response> response, std::shared_ptr<HttpsServer::Request> request);
 	juce::String getConnectionString(std::shared_ptr<WssServer::Connection> connection) const;
 
-	virtual int getNumActiveConnections() const override;
+	int getNumActiveConnections() const override;
+	const std::shared_ptr<const WssServer::Connection> getConnection(const juce::String& id) const;
 };
 
 #endif

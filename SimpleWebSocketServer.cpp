@@ -270,6 +270,11 @@ int SimpleWebSocketServer::getNumActiveConnections() const
 	return connectionMap.size();
 }
 
+const std::shared_ptr<const WsServer::Connection> SimpleWebSocketServer::getConnection(const juce::String& id) const
+{
+	return connectionMap[id];
+}
+
 String SimpleWebSocketServer::getConnectionString(std::shared_ptr<WsServer::Connection> connection) const
 {
 	return String(connection->remote_endpoint().address().to_string()) + ":" + String(connection->remote_endpoint().port());
@@ -615,6 +620,11 @@ void SecureWebSocketServer::initServer()
 int SecureWebSocketServer::getNumActiveConnections() const
 {
 	return connectionMap.size();
+}
+
+const std::shared_ptr<const WssServer::Connection> SecureWebSocketServer::getConnection(const juce::String& id) const
+{
+	return connectionMap[id];
 }
 
 String SecureWebSocketServer::getConnectionString(std::shared_ptr<WssServer::Connection> connection) const
