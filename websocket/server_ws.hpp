@@ -244,6 +244,8 @@ namespace SimpleWeb {
         send(out_message, std::move(callback), fin_rsv_opcode);
       }
 
+      std::size_t queued_messages_count() const { return send_queue.size(); }
+
       void send_close(int status, const std::string &reason = "", std::function<void(const error_code &)> callback = nullptr) {
         // Send close only once (in case close is initiated by server)
         if(closed)
