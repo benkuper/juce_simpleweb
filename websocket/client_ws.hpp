@@ -459,18 +459,22 @@ namespace SimpleWeb {
 								return;
 							}
 							auto header_it = connection->header.find("Sec-WebSocket-Accept");
+							if (header_it == connection->header.end()) {
+								this->connection_error(connection, make_error_code::make_error_code(errc::protocol_error));
+								return;
+							}
 							static auto ws_magic_string = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-
-							std::string b64 = WSCrypto::base64_decode(header_it->second);
 
 							std::string inSha = *nonce_base64 + ws_magic_string;
 							unsigned char hash[20];
 							WSCrypto::calcSha1(inSha.c_str(), (int)inSha.size(), hash);
 
-							std::string hexString((const char*)hash);
-							hexString.resize(20);
+							std::string expected = WSCrypto::base64_encode(hash, 20);
+							const auto& accept = header_it->second;
+							const auto first = accept.find_first_not_of(" \t");
+							const auto last = accept.find_last_not_of(" \t");
 
-							if (header_it != connection->header.end() && strcmp(b64.c_str(), hexString.c_str()) == 0) {
+							if (first != std::string::npos && accept.compare(first, last - first + 1, expected) == 0) {
 								this->connection_open(connection);
 								read_message(connection, num_additional_bytes);
 							}
