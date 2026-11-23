@@ -159,14 +159,16 @@ void SimpleWebSocketServer::sendExclude(const MemoryBlock& data, const StringArr
 
 void SimpleWebSocketServer::stopInternal()
 {
-	if (ioService != nullptr)
 	{
-		ioService->stop();
-		while (isConnected)
+		// Startup publishes the service under this lock. Never wait for the
+		// worker while holding it: the worker reacquires it after run() returns.
+		ScopedLock lock(serverLock);
+		if (ioService != nullptr)
 		{
-			wait(10);
+			ioService->stop();
 		}
 	}
+	stopThread(1000);
 	ScopedLock lock(serverLock);
 
 	if (ws != nullptr)
@@ -189,8 +191,6 @@ void SimpleWebSocketServer::stopInternal()
 	ws.reset();
 	http.reset();
 	ioService.reset();
-
-	stopThread(1000);
 }
 
 void SimpleWebSocketServer::closeConnectionInternal(const String& id, int code, const String& reason)
@@ -205,6 +205,7 @@ void SimpleWebSocketServer::closeConnectionInternal(const String& id, int code, 
 void SimpleWebSocketServer::initServer()
 {
 	ScopedLock lock(serverLock);
+	if (threadShouldExit()) return;
 
 	try
 	{
@@ -253,9 +254,11 @@ void SimpleWebSocketServer::initServer()
 
 		webSocketListeners.call(&Listener::serverInitSuccess);
 
-		if (ioService != nullptr)
+		if (ioService != nullptr && !threadShouldExit())
 		{
-			ioService->run();
+			auto service = ioService;
+			ScopedUnlock unlock(serverLock);
+			service->run();
 		}
 	}
 	catch (std::exception e)
@@ -528,11 +531,14 @@ void SecureWebSocketServer::sendExclude(const MemoryBlock& data, const StringArr
 
 void SecureWebSocketServer::stopInternal()
 {
-	if (ioService != nullptr)
 	{
-		ioService->stop();
+		ScopedLock lock(serverLock);
+		if (ioService != nullptr)
+		{
+			ioService->stop();
+		}
 	}
-
+	stopThread(1000);
 	ScopedLock lock(serverLock);
 
 	if (ws != nullptr)
@@ -569,6 +575,7 @@ void SecureWebSocketServer::closeConnectionInternal(const String& id, int code, 
 void SecureWebSocketServer::initServer()
 {
 	ScopedLock lock(serverLock);
+	if (threadShouldExit()) return;
 
 	try
 	{
@@ -605,9 +612,11 @@ void SecureWebSocketServer::initServer()
 		isConnecting = false;
 		webSocketListeners.call(&Listener::serverInitSuccess);
 
-		if (ioService != nullptr)
+		if (ioService != nullptr && !threadShouldExit())
 		{
-			ioService->run();
+			auto service = ioService;
+			ScopedUnlock unlock(serverLock);
+			service->run();
 		}
 	}
 	catch (std::exception e)
