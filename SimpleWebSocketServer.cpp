@@ -84,10 +84,12 @@ SimpleWebSocketServer::~SimpleWebSocketServer()
 
 void SimpleWebSocketServer::send(const String& message)
 {
+	const auto payload = message.toStdString();
+	const ScopedLock lock(connectionMap.getLock());
 	HashMap<String, std::shared_ptr<WsServer::Connection>, DefaultHashFunctions, CriticalSection>::Iterator it(connectionMap);
 	while (it.next())
 	{
-		it.getValue()->send(message.toStdString());
+		it.getValue()->send(payload);
 	}
 }
 
@@ -95,6 +97,7 @@ void SimpleWebSocketServer::send(const char* data, int numData)
 {
 	std::shared_ptr<WsServer::OutMessage> out_message = std::make_shared<WsServer::OutMessage>();
 	out_message->write(data, numData);
+	const ScopedLock lock(connectionMap.getLock());
 	HashMap<String, std::shared_ptr<WsServer::Connection>, DefaultHashFunctions, CriticalSection>::Iterator it(connectionMap);
 	while (it.next())
 	{
@@ -104,9 +107,10 @@ void SimpleWebSocketServer::send(const char* data, int numData)
 
 void SimpleWebSocketServer::sendTo(const String& message, const String& id)
 {
-	if (connectionMap.contains(id))
+	const ScopedLock lock(connectionMap.getLock());
+	if (const auto connection = connectionMap[id])
 	{
-		connectionMap[id]->send(message.toStdString());
+		connection->send(message.toStdString());
 	}
 	else
 	{
@@ -118,9 +122,10 @@ void SimpleWebSocketServer::sendTo(const MemoryBlock& data, const String& id)
 {
 	std::shared_ptr<WsServer::OutMessage> out_message = std::make_shared<WsServer::OutMessage>();
 	out_message->write((const char*) data.getData(), data.getSize());
-	if (connectionMap.contains(id))
+	const ScopedLock lock(connectionMap.getLock());
+	if (const auto connection = connectionMap[id])
 	{
-		connectionMap[id]->send(out_message, nullptr, 130); // 130 = binary
+		connection->send(out_message, nullptr, 130); // 130 = binary
 	}
 	else
 	{
@@ -130,6 +135,8 @@ void SimpleWebSocketServer::sendTo(const MemoryBlock& data, const String& id)
 
 void SimpleWebSocketServer::sendExclude(const String& message, const StringArray excludeIds)
 {
+	const auto payload = message.toStdString();
+	const ScopedLock lock(connectionMap.getLock());
 	HashMap<String, std::shared_ptr<WsServer::Connection>, DefaultHashFunctions, CriticalSection>::Iterator it(connectionMap);
 	while (it.next())
 	{
@@ -137,7 +144,7 @@ void SimpleWebSocketServer::sendExclude(const String& message, const StringArray
 		{
 			continue;
 		}
-		it.getValue()->send(message.toStdString());
+		it.getValue()->send(payload);
 	}
 }
 
@@ -146,6 +153,7 @@ void SimpleWebSocketServer::sendExclude(const MemoryBlock& data, const StringArr
 	std::shared_ptr<WsServer::OutMessage> out_message = std::make_shared<WsServer::OutMessage>();
 	out_message->write((const char*) data.getData(), data.getSize());
 
+	const ScopedLock lock(connectionMap.getLock());
 	HashMap<String, std::shared_ptr<WsServer::Connection>, DefaultHashFunctions, CriticalSection>::Iterator it(connectionMap);
 	while (it.next())
 	{
@@ -195,11 +203,9 @@ void SimpleWebSocketServer::stopInternal()
 
 void SimpleWebSocketServer::closeConnectionInternal(const String& id, int code, const String& reason)
 {
-	if (!connectionMap.contains(id))
-	{
-		return;
-	}
-	connectionMap[id]->send_close(code, reason.toStdString());
+	const ScopedLock lock(connectionMap.getLock());
+	if (const auto connection = connectionMap[id])
+		connection->send_close(code, reason.toStdString());
 }
 
 void SimpleWebSocketServer::initServer()
@@ -270,6 +276,7 @@ void SimpleWebSocketServer::initServer()
 
 int SimpleWebSocketServer::getNumActiveConnections() const
 {
+	const ScopedLock lock(connectionMap.getLock());
 	return connectionMap.size();
 }
 
@@ -358,7 +365,11 @@ void SimpleWebSocketServer::onMessageCallback(std::shared_ptr<WsServer::Connecti
 void SimpleWebSocketServer::onNewConnectionCallback(std::shared_ptr<WsServer::Connection> connection)
 {
 	String id = getConnectionString(connection);
-	connectionMap.set(id, connection);
+	{
+		// HashMap::set writes through a reference after acquiring its internal lock.
+		const ScopedLock lock(connectionMap.getLock());
+		connectionMap.set(id, connection);
+	}
 	webSocketListeners.call(&Listener::connectionOpened, id);
 }
 
